@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FleetControl Pro</title>
+<style>
+:root{--bg:#0a0f1e;--side:#111827;--card:#1a2236;--input:#0f172a;--bd:rgba(148,163,184,.15);--tx:#f1f5f9;--mut:#64748b;--dim:#94a3b8;--blue:#3b82f6;--green:#10b981;--orange:#f59e0b;--red:#ef4444}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:var(--bg);color:var(--tx);min-height:100vh}
+.sidebar{width:240px;background:var(--side);padding:22px 14px;position:fixed;top:0;bottom:0;border-right:1px solid var(--bd);z-index:10}
+.logo{font-size:19px;font-weight:800;padding:0 10px 20px;border-bottom:1px solid var(--bd);margin-bottom:18px}
+.logo small{display:block;font-size:11px;color:var(--mut);font-weight:500}
+.nav{display:flex;flex-direction:column;gap:5px}
+.nav-item{padding:12px 14px;border-radius:10px;color:var(--dim);font-weight:600;font-size:14px;cursor:pointer;border:1px solid transparent}
+.nav-item.active{background:rgba(59,130,246,.12);color:var(--blue);border-color:rgba(59,130,246,.25)}
+.main{margin-left:240px;padding:26px;max-width:1200px}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:22px}
+.top h2{font-size:22px}.top p{color:var(--mut);font-size:13px;margin-top:3px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+select,input{background:var(--input);border:1px solid var(--bd);color:var(--tx);padding:10px;border-radius:8px;font-size:14px;width:100%;outline:none}
+select:focus,input:focus{border-color:var(--blue)}
+.actions select{width:auto;min-width:220px}
+.btn{background:var(--blue);color:#fff;border:0;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px}
+.btn.green{background:var(--green)}.btn.ghost{background:transparent;border:1px solid var(--bd);color:var(--dim)}.btn.red{background:rgba(239,68,68,.15);color:var(--red)}
+.btn.sm{padding:6px 10px;font-size:11px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;margin-bottom:20px}
+.ct{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:14px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px}
+.metric{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;border-top:3px solid var(--blue)}
+.metric:nth-child(2){border-top-color:var(--green)}.metric:nth-child(3){border-top-color:var(--orange)}.metric:nth-child(4){border-top-color:#8b5cf6}
+.metric h3{font-size:11px;color:var(--mut);text-transform:uppercase;margin-bottom:8px}
+.mv{font-size:22px;font-weight:800}.ms{font-size:12px;color:var(--mut);margin-top:4px}
+.grid2{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.part{display:flex;gap:12px;align-items:center;background:rgba(15,23,42,.6);padding:12px;border-radius:12px;margin-bottom:10px;border:1px solid transparent}
+.part.warning{border-color:rgba(245,158,11,.4)}.part.danger{border-color:rgba(239,68,68,.5)}
+.pi{font-size:22px}.pb{flex:1;min-width:0}.pb h4{font-size:14px;margin-bottom:6px}
+.bar{height:6px;background:#334155;border-radius:4px;overflow:hidden}.fill{height:100%;border-radius:4px}
+.pt{font-size:11px;color:var(--mut);margin-top:5px}
+.alert{padding:9px 0;border-bottom:1px solid var(--bd);font-size:13px}.alert:last-child{border:0}.alert span{display:block;font-size:12px;color:var(--mut)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end}
+label{display:block;font-size:11px;color:var(--mut);margin-bottom:4px;text-transform:uppercase}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+th{text-align:left;padding:10px;color:var(--mut);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--bd)}
+td{padding:11px 10px;border-bottom:1px solid var(--bd);color:var(--dim)}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.vc{background:rgba(15,23,42,.6);border:1px solid var(--bd);border-radius:12px;padding:16px;cursor:pointer}
+.vc.sel{border-color:var(--blue)}.vc h4{font-size:15px}.vc small{color:var(--mut)}
+.vc .row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:var(--dim)}
+.pill{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.ok{background:rgba(16,185,129,.12);color:var(--green)}.warn{background:rgba(245,158,11,.12);color:var(--orange)}.crit{background:rgba(239,68,68,.12);color:var(--red)}
+.empty{text-align:center;color:var(--mut);padding:28px;font-size:14px}
+.view{display:none}.view.active{display:block}
+#toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s;z-index:99}
+#toast.show{opacity:1}#toast.err{background:var(--red)}
+@media(max-width:900px){
+.sidebar{width:100%;top:auto;bottom:0;height:auto;padding:6px;border-right:0;border-top:1px solid var(--bd)}
+.logo{display:none}.nav{flex-direction:row}.nav-item{flex:1;text-align:center;padding:10px 2px;font-size:12px}
+.main{margin-left:0;padding:16px 14px 90px}.grid2{grid-template-columns:1fr}.actions,.actions select{width:100%}}
+.rtip{padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px;color:var(--dim)}.rtip:last-child{border:0}
+@media print{.sidebar,.top .actions,.no-print,#toast{display:none!important}
+body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
+.card,.metric{background:#fff!important;border:1px solid #ccc;color:#000;break-inside:avoid}
+.mv,td,th,.ms,.ct,h2,p,.rtip,.pt{color:#000!important}}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="logo">🚀 FleetControl<small>Pro v5.0</small></div>
+  <nav class="nav">
+    <div class="nav-item active" data-view="dashboard">📊 Panel</div>
+    <div class="nav-item" data-view="vehicles">🚙 Vehículos</div>
+    <div class="nav-item" data-view="fuel">⛽ Combustible</div>
+    <div class="nav-item" data-view="maintenance">🛠️ Servicio</div>
+    <div class="nav-item" data-view="reports">📑 Reportes</div>
+  </nav>
+</div>
+
+<div class="main">
+  <div class="top">
+    <div><h2 id="vt"></h2><p id="vs"></p></div>
+    <div class="actions">
+      <select id="vsel"></select>
+      <button class="btn green" id="btnCsv">⬇️ Exportar CSV</button>
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <div id="view-dashboard" class="view active">
+    <div class="metrics">
+      <div class="metric"><h3>📍 Kilometraje</h3><div class="mv" id="m1">—</div><div class="ms" id="m1s"></div></div>
+      <div class="metric"><h3>⛽ Consumo</h3><div class="mv" id="m2">—</div><div class="ms" id="m2s"></div></div>
+      <div class="metric"><h3>💸 Gasto combustible</h3><div class="mv" id="m3">—</div><div class="ms" id="m3s"></div></div>
+      <div class="metric"><h3>📏 Costo por km</h3><div class="mv" id="m4">—</div><div class="ms" id="m4s"></div></div>
+    </div>
+    <div class="card">
+      <div class="ct">Actualizar odómetro</div>
+      <form id="fOdo" class="form">
+        <div><label>Kilometraje actual</label><input type="number" id="odoKm" min="0" step="1" required></div>
+        <button class="btn" type="submit">Guardar km</button>
+      </form>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="ct">Desgaste de componentes</div><div id="partsA"></div></div>
+      <div class="card"><div class="ct">🔔 Alertas</div><div id="alerts"></div></div>
+    </div>
+  </div>
+
+  <!-- VEHÍCULOS -->
+  <div id="view-vehicles" class="view">
+    <div class="card">
+      <div class="ct">Agregar vehículo</div>
+      <form id="fVeh">
+        <div class="form">
+          <div><label>Marca y modelo</label><input id="vName" maxlength="40" required></div>
+          <div><label>Patente / Chapa</label><input id="vPlate" maxlength="12" required></div>
+          <div><label>Combustible</label><select id="vType"><option>Nafta</option><option>Diésel</option><option>GNC</option></select></div>
+          <div><label>Consumo (L cada 100 km)</label><input type="number" id="vPerf" min="1" step="0.1" placeholder="Ej: 12" required></div>
+          <div><label>Precio por litro</label><input type="number" id="vPrice" min="1" required></div>
+          <div><label>Kilometraje actual</label><input type="number" id="vKm" min="0" required></div>
+        </div>
+        <button class="btn" style="margin-top:14px" type="submit">Agregar vehículo</button>
+      </form>
+    </div>
+    <div class="card"><div class="ct">Flota</div><div class="gallery" id="gallery"></div></div>
+  </div>
+
+  <!-- COMBUSTIBLE -->
+  <div id="view-fuel" class="view">
+    <div class="card">
+      <div class="ct">Registrar carga</div>
+      <form id="fFuel" class="form">
+        <div><label>Fecha</label><input type="date" id="fDate" required></div>
+        <div><label>Estación</label><input id="fStation" maxlength="40" placeholder="Opcional"></div>
+        <div><label>Litros</label><input type="number" id="fLit" min="0.1" step="0.01" required></div>
+        <div><label>Precio/L</label><input type="number" id="fPrice" min="1" step="any" required></div>
+        <div><label>Km al cargar</label><input type="number" id="fKm" min="0" required></div>
+        <button class="btn" type="submit">Guardar carga</button>
+      </form>
+    </div>
+    <div class="card"><div class="ct">Historial de cargas</div><div class="tw" id="fuelTable"></div></div>
+  </div>
+
+  <!-- SERVICIO -->
+  <div id="view-maintenance" class="view">
+    <div class="card"><div class="ct">Estado de componentes</div><div id="partsM"></div></div>
+    <div class="card">
+      <div class="ct">Agregar componente</div>
+      <form id="fPart" class="form">
+        <div><label>Nombre</label><input id="pName" maxlength="40" placeholder="Ej: Correa de distribución" required></div>
+        <div><label>Cambiar cada (km)</label><input type="number" id="pInt" min="1" required></div>
+        <div><label>Km desde el último cambio</label><input type="number" id="pUsed" min="0" value="0"></div>
+        <button class="btn" type="submit">Agregar</button>
+      </form>
+    </div>
+    <div class="card">
+      <div class="ct">Registrar servicio o gasto</div>
+      <form id="fSvc" class="form">
+        <div><label>Componente</label><select id="sPart"></select></div>
+        <div><label>Detalle (obligatorio si es otro gasto)</label><input id="sNote" maxlength="40" placeholder="Ej: Lavado, seguro, multa"></div>
+        <div><label>Fecha</label><input type="date" id="sDate" required></div>
+        <div><label>Taller</label><input id="sShop" maxlength="40" placeholder="Opcional"></div>
+        <div><label>Costo</label><input type="number" id="sCost" min="0" value="0"></div>
+        <button class="btn" type="submit">Registrar</button>
+      </form>
+    </div>
+    <div class="card"><div class="ct">Historial de servicios</div><div class="tw" id="svcTable"></div></div>
+  </div>
+
+  <!-- REPORTES -->
+  <div id="view-reports" class="view">
+    <div class="card no-print">
+      <div class="form">
+        <div><label>Alcance</label><select id="rScope"><option value="one">Vehículo seleccionado</option><option value="all">Toda la flota</option></select></div>
+        <div><label>Período</label><select id="rPeriod"><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="365">Último año</option><option value="0">Todo el historial</option></select></div>
+        <button class="btn" id="btnPrint" type="button">🖨️ Imprimir / PDF</button>
+      </div>
+    </div>
+    <div id="reportBox"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const KEY = 'fleetcontrol_v5';
+const CURRENCY = 'Gs.';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => CURRENCY + ' ' + Math.round(n).toLocaleString('es-PY');
+const num = (n, d = 0) => Number(n).toLocaleString('es-PY', { maximumFractionDigits: d });
+const fdate = d => d.split('-').reverse().join('/');
+const today = () => new Date().toISOString().slice(0, 10);
+
+const PARTS = [
+  { name: 'Aceite y filtros', icon: '🛢️', interval: 10000, color: '#3b82f6' },
+  { name: 'Pastillas de freno', icon: '🛑', interval: 25000, color: '#ef4444' },
+  { name: 'Neumáticos', icon: '🛞', interval: 40000, color: '#f59e0b' },
+  { name: 'Batería', icon: '🔋', interval: 50000, color: '#10b981' }
+];
+
+// ---------- Estado ----------
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && Array.isArray(s.vehicles)) return s;
+  } catch (e) {}
+  return { vehicles: [], currentId: null };
+}
+let state = load();
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch (e) { toast('No se pudo guardar los datos', true); }
+}
+const cur = () => state.vehicles.find(v => v.id === state.currentId) || null;
+
+function toast(msg, err) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'show' + (err ? ' err' : '');
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => t.className = '', 2500);
+}
+
+// ---------- Cálculos ----------
+function addKm(v, delta) {
+  v.km += delta;
+  v.parts.forEach(p => p.current += delta);
+}
+
+function stats(v) {
+  const f = [...v.fuel].sort((a, b) => a.km - b.km);
+  const liters = f.reduce((s, x) => s + x.liters, 0);
+  const cost = f.reduce((s, x) => s + x.liters * x.price, 0);
+  const last = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km)[0];
+  let perf = v.perf, cpk = (last ? last.price : v.price) / v.perf, real = false;
+  const src = last ? 'carga' : 'base';
+  if (f.length >= 2) {
+    const dist = f[f.length - 1].km - f[0].km;
+    const rest = f.slice(1);
+    const L = rest.reduce((s, x) => s + x.liters, 0);
+    const C = rest.reduce((s, x) => s + x.liters * x.price, 0);
+    if (dist > 0 && L > 0) { perf = dist / L; cpk = C / dist; real = true; }
+  }
+  return { liters, cost, perf, cpk, real, src };
+}
+
+function partState(p) {
+  const pct = p.current / p.interval * 100;
+  const left = p.interval - p.current;
+  if (pct >= 100) return { cls: 'danger', pct: 100, txt: 'VENCIDO por ' + num(-left) + ' km', lvl: 2 };
+  if (pct >= 90) return { cls: 'danger', pct, txt: 'Urgente: faltan ' + num(left) + ' km', lvl: 2 };
+  if (pct >= 75) return { cls: 'warning', pct, txt: 'Faltan ' + num(left) + ' km', lvl: 1 };
+  return { cls: '', pct, txt: 'Faltan ' + num(left) + ' km', lvl: 0 };
+}
+
+// ---------- Render ----------
+function renderSelect() {
+  const s = $('vsel');
+  if (!state.vehicles.length) { s.innerHTML = '<option>Sin vehículos</option>'; s.disabled = true; return; }
+  s.disabled = false;
+  s.innerHTML = state.vehicles.map(v => `<option value="${esc(v.id)}">${esc(v.name)} - ${esc(v.plate)}</option>`).join('');
+  s.value = state.currentId;
+}
+
+function partsHTML(v, withAdjust) {
+  return v.parts.map((p, i) => {
+    const st = partState(p);
+    return `<div class="part ${st.cls}">
+      <div class="pi">${p.icon}</div>
+      <div class="pb"><h4>${esc(p.name)}</h4>
+        <div class="bar"><div class="fill" style="width:${st.pct}%;background:${p.color}"></div></div>
+        <div class="pt">${num(p.current)} / ${num(p.interval)} km · ${st.txt}</div></div>
+      ${withAdjust ? `<div style="display:flex;flex-direction:column;gap:4px">
+        <button class="btn ghost sm" data-act="adj" data-i="${i}">Ajustar</button>
+        <button class="btn ghost sm" data-act="int" data-i="${i}">Intervalo</button>
+        <button class="btn red sm" data-act="delpart" data-i="${i}">Quitar</button></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderDashboard(v) {
+  if (!v) {
+    ['m1', 'm2', 'm3', 'm4'].forEach(id => { $(id).textContent = '—'; $(id + 's').textContent = ''; });
+    $('partsA').innerHTML = $('alerts').innerHTML = '<div class="empty">Agregá un vehículo para comenzar.</div>';
+    return;
+  }
+  const s = stats(v);
+  $('m1').textContent = num(v.km) + ' km';
+  $('m1s').textContent = v.type;
+  $('m2').textContent = num(100 / s.perf, 1) + ' L/100 km';
+  $('m2s').textContent = s.real ? 'Calculado con tus cargas' : 'Declarado (faltan cargas)';
+  $('m3').textContent = money(s.cost);
+  $('m3s').textContent = num(s.liters, 1) + ' L cargados';
+  $('m4').textContent = money(s.cpk);
+  $('m4s').textContent = s.real ? 'Real, según tus cargas'
+    : s.src === 'carga' ? 'Precio de tu última carga × ' + num(100 / v.perf, 1) + ' L/100 km'
+    : 'Estimado con precio base';
+  if (document.activeElement !== $('odoKm')) $('odoKm').value = v.km;
+  $('partsA').innerHTML = partsHTML(v, false);
+  const al = v.parts.map(p => ({ p, st: partState(p) })).filter(x => x.st.lvl > 0);
+  $('alerts').innerHTML = al.length
+    ? al.map(x => `<div class="alert">${x.st.lvl === 2 ? '🔴' : '🟠'} ${esc(x.p.name)}<span>${x.st.txt}</span></div>`).join('')
+    : '<div class="empty">✅ Todo en orden</div>';
+}
+
+function renderGallery() {
+  const g = $('gallery');
+  if (!state.vehicles.length) { g.innerHTML = '<div class="empty">Todavía no hay vehículos.</div>'; return; }
+  g.innerHTML = state.vehicles.map(v => {
+    const lvl = Math.max(0, ...v.parts.map(p => partState(p).lvl));
+    const cls = ['ok', 'warn', 'crit'][lvl], txt = ['Óptimo', 'Atención', 'Crítico'][lvl];
+    return `<div class="vc ${v.id === state.currentId ? 'sel' : ''}" data-act="pick" data-id="${esc(v.id)}">
+      <h4>${esc(v.name)}</h4><small>${esc(v.plate)} · ${esc(v.type)}</small>
+      <div class="row"><span class="pill ${cls}">${txt}</span><span>${num(v.km)} km</span></div>
+      <div class="row"><span>${money(v.price)}/L</span>
+      <button class="btn red sm" data-act="del" data-id="${esc(v.id)}">Eliminar</button></div>
+    </div>`;
+  }).join('');
+}
+
+function renderFuel(v) {
+  const box = $('fuelTable');
+  if (!v || !v.fuel.length) { box.innerHTML = '<div class="empty">Sin cargas registradas.</div>'; return; }
+  const asc = [...v.fuel].sort((a, b) => a.km - b.km);
+  const perf = {};
+  asc.forEach((x, i) => { if (i > 0 && x.km > asc[i - 1].km) perf[x.id] = (x.km - asc[i - 1].km) / x.liters; });
+  const rows = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km).map(x => `<tr>
+    <td>${fdate(x.date)}</td><td>${esc(x.station || '-')}</td><td>${num(x.liters, 2)} L</td>
+    <td>${money(x.price)}</td><td>${money(x.liters * x.price)}</td><td>${num(x.km)} km</td>
+    <td>${perf[x.id] ? num(100 / perf[x.id], 1) + ' L/100 km' : '-'}</td>
+    <td><button class="btn red sm" data-act="delfuel" data-id="${x.id}">✕</button></td></tr>`).join('');
+  box.innerHTML = `<table><thead><tr><th>Fecha</th><th>Estación</th><th>Litros</th><th>Precio/L</th><th>Total</th><th>Km</th><th>Consumo</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderService(v) {
+  $('sPart').innerHTML = v
+    ? v.parts.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('') + '<option value="other">➕ Otro gasto (sin componente)</option>'
+    : '';
+  $('partsM').innerHTML = v ? partsHTML(v, true) : '<div class="empty">Agregá un vehículo para comenzar.</div>';
+  const box = $('svcTable');
+  if (!v || !v.services.length) { box.innerHTML = '<div class="empty">Sin servicios registrados.</div>'; return; }
+  const total = v.services.reduce((s, x) => s + x.cost, 0);
+  const rows = v.services.map((x, i) => ({ x, i })).reverse().map(({ x, i }) => `<tr>
+    <td>${fdate(x.date)}</td><td>${esc(x.part)}</td><td>${num(x.km)} km</td>
+    <td>${esc(x.shop || '-')}</td><td>${money(x.cost)}</td>
+    <td>${x.interval ? num(x.km + x.interval) + ' km' : '-'}</td>
+    <td><button class="btn red sm" data-act="delsvc" data-i="${i}">✕</button></td></tr>`).join('');
+  box.innerHTML = `<p style="margin-bottom:10px;color:var(--dim);font-size:13px">Total gastado: <b style="color:var(--tx)">${money(total)}</b></p>
+    <table><thead><tr><th>Fecha</th><th>Detalle</th><th>Km</th><th>Taller</th><th>Costo</th><th>Próximo</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderReport() {
+  const box = $('reportBox');
+  const days = parseInt($('rPeriod').value, 10);
+  const all = $('rScope').value === 'all';
+  const list = all ? state.vehicles : (cur() ? [cur()] : []);
+  if (!list.length) { box.innerHTML = '<div class="card"><div class="empty">Agregá un vehículo para generar reportes.</div></div>'; return; }
+  const from = days ? new Date(Date.now() - days * 864e5).toISOString().slice(0, 10) : '0000-00-00';
+  const rows = list.map(v => {
+    const fuel = v.fuel.filter(x => x.date >= from), svc = v.services.filter(x => x.date >= from);
+    const kms = fuel.map(x => x.km);
+    const dist = kms.length > 1 ? Math.max(...kms) - Math.min(...kms) : 0;
+    const liters = fuel.reduce((s, x) => s + x.liters, 0);
+    const fcost = fuel.reduce((s, x) => s + x.liters * x.price, 0);
+    const scost = svc.reduce((s, x) => s + x.cost, 0);
+    return { v, fuel, svc, dist, liters, fcost, scost, total: fcost + scost, st: stats(v) };
+  });
+  const sum = k => rows.reduce((s, r) => s + r[k], 0);
+  const F = sum('fcost'), S = sum('scost'), T = F + S, D = sum('dist'), L = sum('liters');
+  const pct = x => T ? Math.round(x / T * 100) : 0;
+
+  const months = {};
+  const addM = (d, k, val) => { const m = d.slice(0, 7); (months[m] = months[m] || { f: 0, s: 0 })[k] += val; };
+  rows.forEach(r => {
+    r.fuel.forEach(x => addM(x.date, 'f', x.liters * x.price));
+    r.svc.forEach(x => addM(x.date, 's', x.cost));
+  });
+  const mKeys = Object.keys(months).sort();
+
+  const alerts = [];
+  rows.forEach(r => r.v.parts.forEach(p => { const st = partState(p); if (st.lvl) alerts.push({ v: r.v, p, st }); }));
+
+  const tips = [];
+  if (T) tips.push(`El combustible representa el ${pct(F)}% del gasto y el mantenimiento/otros el ${pct(S)}%.`);
+  if (D > 0) tips.push(`Costo operativo total: ${money(T / D)} por km (${money(F / D)} solo en combustible).`);
+  rows.forEach(r => {
+    if (!r.st.real) return;
+    const real = 100 / r.st.perf, dec = 100 / r.v.perf;
+    if (Math.abs(real - dec) / dec > 0.1) {
+      tips.push(`${r.v.name}: consume ${num(real, 1)} L/100 km reales contra ${num(dec, 1)} declarados (${real > dec ? 'conviene revisarlo' : 'mejor de lo esperado'}).`);
+    }
+  });
+  if (mKeys.length) {
+    const tot = m => months[m].f + months[m].s;
+    const top = mKeys.reduce((a, b) => tot(a) >= tot(b) ? a : b);
+    tips.push(`Mes de mayor gasto: ${top.split('-').reverse().join('/')} (${money(tot(top))}).`);
+  }
+  const over = alerts.filter(a => a.st.lvl === 2).length;
+  tips.push(over ? `⚠️ ${over} componente(s) requieren atención inmediata.` : '✅ No hay componentes en estado crítico.');
+
+  const per = $('rPeriod').selectedOptions[0].textContent;
+  const who = all ? 'Toda la flota (' + list.length + ' vehículos)' : esc(list[0].name) + ' - ' + esc(list[0].plate);
+  const monthRows = mKeys.map(m => `<tr><td>${m.split('-').reverse().join('/')}</td><td>${money(months[m].f)}</td><td>${money(months[m].s)}</td><td><b>${money(months[m].f + months[m].s)}</b></td></tr>`).join('');
+  const vehRows = rows.map(r => `<tr><td>${esc(r.v.name)}<br><small>${esc(r.v.plate)}</small></td>
+    <td>${num(r.dist)}</td><td>${num(r.liters, 1)}</td><td>${money(r.fcost)}</td><td>${money(r.scost)}</td>
+    <td><b>${money(r.total)}</b></td><td>${r.dist > 0 ? money(r.total / r.dist) : '-'}</td><td>${num(100 / r.st.perf, 1)}</td></tr>`).join('');
+
+  box.innerHTML = `
+  <div class="card"><div class="ct">Reporte ejecutivo · FleetControl Pro</div>
+    <div style="font-size:18px;font-weight:700">${who}</div>
+    <div class="ms">${per} · Generado el ${fdate(today())}</div></div>
+  <div class="metrics">
+    <div class="metric"><h3>Gasto total</h3><div class="mv">${money(T)}</div><div class="ms">Combustible + servicios</div></div>
+    <div class="metric"><h3>Combustible</h3><div class="mv">${money(F)}</div><div class="ms">${num(L, 1)} L · ${pct(F)}%</div></div>
+    <div class="metric"><h3>Mantenimiento y otros</h3><div class="mv">${money(S)}</div><div class="ms">${pct(S)}% del gasto</div></div>
+    <div class="metric"><h3>Costo por km</h3><div class="mv">${D > 0 ? money(T / D) : '—'}</div><div class="ms">${num(D)} km registrados en cargas</div></div>
+  </div>
+  <div class="card"><div class="ct">Distribución del gasto</div>
+    <div class="bar" style="height:14px;display:flex"><div style="width:${pct(F)}%;background:var(--blue)"></div><div style="width:${pct(S)}%;background:var(--orange)"></div></div>
+    <div class="pt">🔵 Combustible ${pct(F)}% · 🟠 Mantenimiento y otros ${pct(S)}%</div></div>
+  <div class="card"><div class="ct">Conclusiones</div>${tips.map(t => `<div class="rtip">${esc(t)}</div>`).join('')}</div>
+  <div class="card"><div class="ct">Evolución mensual</div>${mKeys.length
+    ? `<div class="tw"><table><thead><tr><th>Mes</th><th>Combustible</th><th>Servicios</th><th>Total</th></tr></thead><tbody>${monthRows}</tbody></table></div>`
+    : '<div class="empty">Sin movimientos en el período.</div>'}</div>
+  <div class="card"><div class="ct">Detalle por vehículo</div><div class="tw"><table><thead><tr><th>Vehículo</th><th>Km</th><th>Litros</th><th>Combustible</th><th>Servicios</th><th>Total</th><th>Costo/km</th><th>L/100 km</th></tr></thead><tbody>${vehRows}</tbody></table></div></div>
+  <div class="card"><div class="ct">Componentes que requieren atención</div>${alerts.length
+    ? alerts.map(a => `<div class="rtip">${a.st.lvl === 2 ? '🔴' : '🟠'} ${esc(a.v.name)} · ${esc(a.p.name)}: ${a.st.txt}</div>`).join('')
+    : '<div class="empty">✅ Todo en orden.</div>'}</div>`;
+}
+
+function render() {
+  if (!cur() && state.vehicles.length) state.currentId = state.vehicles[0].id;
+  const v = cur();
+  renderSelect(); renderDashboard(v); renderGallery(); renderFuel(v); renderService(v); renderReport();
+  if (v) { $('fKm').placeholder = v.km; $('fPrice').placeholder = v.price; }
+}
+
+// ---------- Navegación ----------
+const TITLES = {
+  dashboard: ['Panel operativo', 'Métricas calculadas con tus datos reales.'],
+  vehicles: ['Vehículos', 'Agregá, seleccioná o eliminá vehículos.'],
+  fuel: ['Combustible', 'Historial de cargas y rendimiento real.'],
+  maintenance: ['Mantenimiento', 'Desgaste de componentes e historial de servicios.'],
+  reports: ['Reporte ejecutivo', 'Costos, consumo y estado de la flota en un solo informe.']
+};
+function switchView(name) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === name));
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+  $('view-' + name).classList.add('active');
+  $('vt').textContent = TITLES[name][0];
+  $('vs').textContent = TITLES[name][1];
+}
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => switchView(n.dataset.view)));
+$('vsel').addEventListener('change', e => { state.currentId = e.target.value; save(); render(); });
+
+// ---------- Acciones ----------
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const v = cur(), act = b.dataset.act;
+  if (act === 'pick') { state.currentId = b.dataset.id; save(); render(); toast('Vehículo seleccionado'); }
+  if (act === 'del') {
+    e.stopPropagation();
+    const t = state.vehicles.find(x => x.id === b.dataset.id);
+    if (t && confirm('¿Eliminar ' + t.name + ' y todo su historial?')) {
+      state.vehicles = state.vehicles.filter(x => x.id !== t.id);
+      if (state.currentId === t.id) state.currentId = state.vehicles[0] ? state.vehicles[0].id : null;
+      save(); render(); toast('Vehículo eliminado');
+    }
+  }
+  if (act === 'delfuel' && v && confirm('¿Eliminar esta carga?')) {
+    v.fuel = v.fuel.filter(x => String(x.id) !== b.dataset.id);
+    save(); render();
+  }
+  if (act === 'adj' && v) {
+    const p = v.parts[b.dataset.i];
+    const r = prompt('Km recorridos desde el último cambio de "' + p.name + '":', p.current);
+    const n = parseInt(r, 10);
+    if (r !== null && n >= 0) { p.current = n; save(); render(); toast('Desgaste actualizado'); }
+  }
+  if (act === 'int' && v) {
+    const p = v.parts[b.dataset.i];
+    const r = prompt('Cambiar "' + p.name + '" cada cuántos km:', p.interval);
+    const n = parseInt(r, 10);
+    if (r !== null && n > 0) { p.interval = n; save(); render(); toast('Intervalo actualizado'); }
+  }
+  if (act === 'delpart' && v) {
+    const p = v.parts[b.dataset.i];
+    if (confirm('¿Quitar "' + p.name + '" de este vehículo? El historial de gastos se conserva.')) {
+      v.parts.splice(b.dataset.i, 1); save(); render(); toast('Componente quitado');
+    }
+  }
+  if (act === 'delsvc' && v && confirm('¿Eliminar este registro de gasto?')) {
+    v.services.splice(b.dataset.i, 1); save(); render();
+  }
+});
+
+$('fVeh').addEventListener('submit', e => {
+  e.preventDefault();
+  const plate = $('vPlate').value.trim().toUpperCase();
+  if (state.vehicles.some(v => v.plate === plate)) return toast('Ya existe un vehículo con esa patente', true);
+  const v = {
+    id: 'v_' + Date.now(), name: $('vName').value.trim(), plate, type: $('vType').value,
+    perf: 100 / parseFloat($('vPerf').value), price: parseFloat($('vPrice').value), km: parseInt($('vKm').value, 10),
+    parts: PARTS.map(p => ({ ...p, current: 0 })), fuel: [], services: []
+  };
+  state.vehicles.push(v); state.currentId = v.id;
+  save(); render(); e.target.reset();
+  toast('Vehículo agregado. Ajustá el desgaste en Servicio.');
+});
+
+$('fOdo').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = cur(); if (!v) return toast('Primero agregá un vehículo', true);
+  const km = parseInt($('odoKm').value, 10);
+  if (km < v.km) return toast('El km no puede ser menor al actual (' + num(v.km) + ')', true);
+  addKm(v, km - v.km); save(); render(); toast('Odómetro actualizado');
+});
+
+$('fFuel').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = cur(); if (!v) return toast('Primero agregá un vehículo', true);
+  const km = parseInt($('fKm').value, 10);
+  if (km > v.km) addKm(v, km - v.km);
+  v.fuel.push({
+    id: Date.now(), date: $('fDate').value, station: $('fStation').value.trim(),
+    liters: parseFloat($('fLit').value), price: parseFloat($('fPrice').value), km
+  });
+  v.price = parseFloat($('fPrice').value);
+  save(); render(); e.target.reset(); $('fDate').value = today(); toast('Carga registrada');
+});
+
+$('fSvc').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = cur(); if (!v) return toast('Primero agregá un vehículo', true);
+  const sel = $('sPart').value, note = $('sNote').value.trim();
+  const p = sel === 'other' ? null : v.parts[sel];
+  if (!p && !note) return toast('Escribí el detalle del gasto', true);
+  v.services.push({
+    date: $('sDate').value, part: p ? p.name : note, km: v.km, shop: $('sShop').value.trim(),
+    cost: parseFloat($('sCost').value) || 0, interval: p ? p.interval : 0
+  });
+  if (p) p.current = 0;
+  save(); render(); e.target.reset(); $('sDate').value = today(); $('sCost').value = 0;
+  toast(p ? p.name + ' reiniciado' : 'Gasto registrado');
+});
+
+$('fPart').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = cur(); if (!v) return toast('Primero agregá un vehículo', true);
+  const name = $('pName').value.trim();
+  const interval = parseInt($('pInt').value, 10);
+  const used = parseInt($('pUsed').value, 10) || 0;
+  if (v.parts.some(p => p.name.toLowerCase() === name.toLowerCase())) return toast('Ya existe ese componente', true);
+  const colors = ['#8b5cf6', '#06b6d4', '#d946ef', '#84cc16', '#f97316'];
+  v.parts.push({ name, icon: '🔧', interval, current: used, color: colors[v.parts.length % colors.length] });
+  save(); render(); e.target.reset(); toast('Componente agregado');
+});
+
+// ---------- Exportar CSV ----------
+$('btnCsv').addEventListener('click', () => {
+  if (!state.vehicles.length) return toast('No hay datos para exportar', true);
+  const q = x => '"' + String(x).replace(/"/g, '""') + '"';
+  let csv = 'Nombre,Patente,Tipo,Kilometraje,Consumo L/100km,Precio/L,Cargas,Servicios\n';
+  state.vehicles.forEach(v => {
+    csv += [q(v.name), q(v.plate), q(v.type), v.km, (100 / stats(v).perf).toFixed(2), v.price, v.fuel.length, v.services.length].join(',') + '\n';
+  });
+  const url = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'flota_vehiculos.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('CSV exportado');
+});
+
+$('rScope').addEventListener('change', renderReport);
+$('rPeriod').addEventListener('change', renderReport);
+$('btnPrint').addEventListener('click', () => window.print());
+
+// ---------- Inicio ----------
+$('fDate').value = today();
+$('sDate').value = today();
+switchView('dashboard');
+render();
+</script>
+</body>
+</html>
