@@ -82,7 +82,6 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
     <div><h2 id="vt"></h2><p id="vs"></p></div>
     <div class="actions">
       <select id="vsel"></select>
-      <button class="btn green" id="btnCsv">⬇️ Exportar CSV</button>
     </div>
   </div>
 
@@ -91,7 +90,7 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
     <div class="metrics">
       <div class="metric"><h3>📍 Kilometraje</h3><div class="mv" id="m1">—</div><div class="ms" id="m1s"></div></div>
       <div class="metric"><h3>⛽ Consumo</h3><div class="mv" id="m2">—</div><div class="ms" id="m2s"></div></div>
-      <div class="metric"><h3>💸 Gasto combustible</h3><div class="mv" id="m3">—</div><div class="ms" id="m3s"></div></div>
+      <div class="metric"><h3>💸 Gasto pagado</h3><div class="mv" id="m3">—</div><div class="ms" id="m3s"></div></div>
       <div class="metric"><h3>📏 Costo por km</h3><div class="mv" id="m4">—</div><div class="ms" id="m4s"></div></div>
     </div>
     <div class="card">
@@ -115,15 +114,24 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
         <div class="form">
           <div><label>Marca y modelo</label><input id="vName" maxlength="40" required></div>
           <div><label>Patente / Chapa</label><input id="vPlate" maxlength="12" required></div>
+          <div><label>Tipo de vehículo</label><select id="vKind"><option>Auto</option><option>Moto</option></select></div>
           <div><label>Combustible</label><select id="vType"><option>Nafta</option><option>Diésel</option><option>GNC</option></select></div>
           <div><label>Consumo (L cada 100 km)</label><input type="number" id="vPerf" min="1" step="0.1" placeholder="Ej: 12" required></div>
-          <div><label>Precio por litro</label><input type="number" id="vPrice" min="1" required></div>
           <div><label>Kilometraje actual</label><input type="number" id="vKm" min="0" required></div>
         </div>
         <button class="btn" style="margin-top:14px" type="submit">Agregar vehículo</button>
       </form>
     </div>
     <div class="card"><div class="ct">Flota</div><div class="gallery" id="gallery"></div></div>
+    <div class="card">
+      <div class="ct">Respaldo de datos</div>
+      <p class="ms" style="margin-bottom:12px">Tus datos se guardan solo en este navegador. Descargá un respaldo con frecuencia.</p>
+      <div class="actions">
+        <button class="btn" id="btnBackup" type="button">💾 Exportar respaldo</button>
+        <button class="btn ghost" id="btnRestore" type="button">📂 Importar respaldo</button>
+        <input type="file" id="fileRestore" accept="application/json,.json" style="display:none">
+      </div>
+    </div>
   </div>
 
   <!-- COMBUSTIBLE -->
@@ -136,6 +144,7 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
         <div><label>Litros</label><input type="number" id="fLit" min="0.1" step="0.01" required></div>
         <div><label>Precio/L</label><input type="number" id="fPrice" min="1" step="any" required></div>
         <div><label>Km al cargar</label><input type="number" id="fKm" min="0" required></div>
+        <div><label>¿Tanque lleno?</label><select id="fFull"><option value="1">Sí, llené el tanque</option><option value="0">No, carga parcial</option></select></div>
         <button class="btn" type="submit">Guardar carga</button>
       </form>
     </div>
@@ -174,7 +183,7 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
       <div class="form">
         <div><label>Alcance</label><select id="rScope"><option value="one">Vehículo seleccionado</option><option value="all">Toda la flota</option></select></div>
         <div><label>Período</label><select id="rPeriod"><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="365">Último año</option><option value="0">Todo el historial</option></select></div>
-        <button class="btn" id="btnPrint" type="button">🖨️ Imprimir / PDF</button>
+        <button class="btn" id="btnPrint" type="button">📄 Descargar PDF</button>
       </div>
     </div>
     <div id="reportBox"></div>
@@ -190,7 +199,8 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 const money = n => CURRENCY + ' ' + Math.round(n).toLocaleString('es-PY');
 const num = (n, d = 0) => Number(n).toLocaleString('es-PY', { maximumFractionDigits: d });
 const fdate = d => d.split('-').reverse().join('/');
-const today = () => new Date().toISOString().slice(0, 10);
+const isoLocal = ms => new Date(ms - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+const today = () => isoLocal(Date.now());
 
 const PARTS = [
   { name: 'Aceite y filtros', icon: '🛢️', interval: 10000, color: '#3b82f6' },
@@ -199,11 +209,28 @@ const PARTS = [
   { name: 'Batería', icon: '🔋', interval: 50000, color: '#10b981' }
 ];
 
+const PARTS_MOTO = [
+  { name: 'Aceite y filtro', icon: '🛢️', interval: 3000, color: '#3b82f6' },
+  { name: 'Kit de transmisión', icon: '⛓️', interval: 15000, color: '#8b5cf6' },
+  { name: 'Pastillas de freno', icon: '🛑', interval: 15000, color: '#ef4444' },
+  { name: 'Neumáticos', icon: '🛞', interval: 20000, color: '#f59e0b' },
+  { name: 'Batería', icon: '🔋', interval: 30000, color: '#10b981' }
+];
+
 // ---------- Estado ----------
+function clean(s) {
+  s.vehicles = s.vehicles.filter(v => v && Array.isArray(v.parts) && isFinite(v.km) && v.perf > 0);
+  s.vehicles.forEach(v => {
+    v.price = v.price > 0 ? v.price : 0;
+    v.fuel = Array.isArray(v.fuel) ? v.fuel.filter(x => x.liters > 0 && x.price > 0 && isFinite(x.km)) : [];
+    v.services = Array.isArray(v.services) ? v.services : [];
+  });
+  return s;
+}
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s && Array.isArray(s.vehicles)) return s;
+    if (s && Array.isArray(s.vehicles)) return clean(s);
   } catch (e) {}
   return { vehicles: [], currentId: null };
 }
@@ -229,20 +256,24 @@ function addKm(v, delta) {
 }
 
 function stats(v) {
-  const f = [...v.fuel].sort((a, b) => a.km - b.km);
+  const f = [...v.fuel].sort((a, b) => a.km - b.km || a.date.localeCompare(b.date));
   const liters = f.reduce((s, x) => s + x.liters, 0);
   const cost = f.reduce((s, x) => s + x.liters * x.price, 0);
   const last = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km)[0];
-  let perf = v.perf, cpk = (last ? last.price : v.price) / v.perf, real = false;
+  let perf = v.perf, cpk = (last ? last.price : v.price) / v.perf, real = false, dist = 0, cL = 0, cC = 0;
   const src = last ? 'carga' : 'base';
-  if (f.length >= 2) {
-    const dist = f[f.length - 1].km - f[0].km;
-    const rest = f.slice(1);
-    const L = rest.reduce((s, x) => s + x.liters, 0);
-    const C = rest.reduce((s, x) => s + x.liters * x.price, 0);
-    if (dist > 0 && L > 0) { perf = dist / L; cpk = C / dist; real = true; }
+  // Solo se usan cargas de tanque lleno como referencia (primera y última).
+  // Las cargas parciales intermedias suman como combustible consumido.
+  const full = f.map((x, i) => i).filter(i => f[i].full !== false);
+  if (full.length >= 2) {
+    const a = full[0], b = full[full.length - 1];
+    const d = f[b].km - f[a].km;
+    const seg = f.slice(a + 1, b + 1);
+    const L = seg.reduce((s, x) => s + x.liters, 0);
+    const C = seg.reduce((s, x) => s + x.liters * x.price, 0);
+    if (d > 0 && L > 0) { perf = d / L; cpk = C / d; real = true; dist = d; cL = L; cC = C; }
   }
-  return { liters, cost, perf, cpk, real, src };
+  return { liters, cost, perf, cpk, real, src, dist, cL, cC };
 }
 
 function partState(p) {
@@ -289,13 +320,13 @@ function renderDashboard(v) {
   $('m1').textContent = num(v.km) + ' km';
   $('m1s').textContent = v.type;
   $('m2').textContent = num(100 / s.perf, 1) + ' L/100 km';
-  $('m2s').textContent = s.real ? 'Calculado con tus cargas' : 'Declarado (faltan cargas)';
+  $('m2s').textContent = s.real ? 'Real, tanque lleno a lleno' : 'Declarado (faltan 2 cargas con tanque lleno)';
   $('m3').textContent = money(s.cost);
-  $('m3s').textContent = num(s.liters, 1) + ' L cargados';
-  $('m4').textContent = money(s.cpk);
-  $('m4s').textContent = s.real ? 'Real, según tus cargas'
+  $('m3s').textContent = num(s.liters, 1) + ' L pagados' + (s.real ? ' · consumido est.: ' + money(s.cC) : '');
+  $('m4').textContent = s.cpk > 0 ? money(s.cpk) : '—';
+  $('m4s').textContent = s.real ? 'Real: ' + money(s.cC) + ' en ' + num(s.dist) + ' km'
     : s.src === 'carga' ? 'Precio de tu última carga × ' + num(100 / v.perf, 1) + ' L/100 km'
-    : 'Estimado con precio base';
+    : 'Se calcula con tu primera carga';
   if (document.activeElement !== $('odoKm')) $('odoKm').value = v.km;
   $('partsA').innerHTML = partsHTML(v, false);
   const al = v.parts.map(p => ({ p, st: partState(p) })).filter(x => x.st.lvl > 0);
@@ -313,7 +344,7 @@ function renderGallery() {
     return `<div class="vc ${v.id === state.currentId ? 'sel' : ''}" data-act="pick" data-id="${esc(v.id)}">
       <h4>${esc(v.name)}</h4><small>${esc(v.plate)} · ${esc(v.type)}</small>
       <div class="row"><span class="pill ${cls}">${txt}</span><span>${num(v.km)} km</span></div>
-      <div class="row"><span>${money(v.price)}/L</span>
+      <div class="row"><span>${v.price > 0 ? money(v.price) + '/L' : 'Sin cargas'}</span>
       <button class="btn red sm" data-act="del" data-id="${esc(v.id)}">Eliminar</button></div>
     </div>`;
   }).join('');
@@ -322,11 +353,19 @@ function renderGallery() {
 function renderFuel(v) {
   const box = $('fuelTable');
   if (!v || !v.fuel.length) { box.innerHTML = '<div class="empty">Sin cargas registradas.</div>'; return; }
-  const asc = [...v.fuel].sort((a, b) => a.km - b.km);
+  const asc = [...v.fuel].sort((a, b) => a.km - b.km || a.date.localeCompare(b.date));
   const perf = {};
-  asc.forEach((x, i) => { if (i > 0 && x.km > asc[i - 1].km) perf[x.id] = (x.km - asc[i - 1].km) / x.liters; });
+  let prev = -1;
+  asc.forEach((x, i) => {
+    if (x.full === false) return;
+    if (prev >= 0) {
+      const L = asc.slice(prev + 1, i + 1).reduce((s, y) => s + y.liters, 0), d = x.km - asc[prev].km;
+      if (d > 0 && L > 0) perf[x.id] = d / L;
+    }
+    prev = i;
+  });
   const rows = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km).map(x => `<tr>
-    <td>${fdate(x.date)}</td><td>${esc(x.station || '-')}</td><td>${num(x.liters, 2)} L</td>
+    <td>${fdate(x.date)}</td><td>${esc(x.station || '-')}</td><td>${num(x.liters, 2)} L${x.full === false ? ' (parcial)' : ''}</td>
     <td>${money(x.price)}</td><td>${money(x.liters * x.price)}</td><td>${num(x.km)} km</td>
     <td>${perf[x.id] ? num(100 / perf[x.id], 1) + ' L/100 km' : '-'}</td>
     <td><button class="btn red sm" data-act="delfuel" data-id="${x.id}">✕</button></td></tr>`).join('');
@@ -341,7 +380,7 @@ function renderService(v) {
   const box = $('svcTable');
   if (!v || !v.services.length) { box.innerHTML = '<div class="empty">Sin servicios registrados.</div>'; return; }
   const total = v.services.reduce((s, x) => s + x.cost, 0);
-  const rows = v.services.map((x, i) => ({ x, i })).reverse().map(({ x, i }) => `<tr>
+  const rows = v.services.map((x, i) => ({ x, i })).sort((a, b) => a.x.date.localeCompare(b.x.date) || a.i - b.i).reverse().map(({ x, i }) => `<tr>
     <td>${fdate(x.date)}</td><td>${esc(x.part)}</td><td>${num(x.km)} km</td>
     <td>${esc(x.shop || '-')}</td><td>${money(x.cost)}</td>
     <td>${x.interval ? num(x.km + x.interval) + ' km' : '-'}</td>
@@ -356,7 +395,7 @@ function renderReport() {
   const all = $('rScope').value === 'all';
   const list = all ? state.vehicles : (cur() ? [cur()] : []);
   if (!list.length) { box.innerHTML = '<div class="card"><div class="empty">Agregá un vehículo para generar reportes.</div></div>'; return; }
-  const from = days ? new Date(Date.now() - days * 864e5).toISOString().slice(0, 10) : '0000-00-00';
+  const from = days ? isoLocal(Date.now() - days * 864e5) : '0000-00-00';
   const rows = list.map(v => {
     const fuel = v.fuel.filter(x => x.date >= from), svc = v.services.filter(x => x.date >= from);
     const kms = fuel.map(x => x.km);
@@ -433,7 +472,7 @@ function render() {
   if (!cur() && state.vehicles.length) state.currentId = state.vehicles[0].id;
   const v = cur();
   renderSelect(); renderDashboard(v); renderGallery(); renderFuel(v); renderService(v); renderReport();
-  if (v) { $('fKm').placeholder = v.km; $('fPrice').placeholder = v.price; }
+  if (v) { $('fKm').placeholder = v.km; $('fPrice').placeholder = v.price > 0 ? v.price : 'Ej: 7000'; }
 }
 
 // ---------- Navegación ----------
@@ -502,8 +541,8 @@ $('fVeh').addEventListener('submit', e => {
   if (state.vehicles.some(v => v.plate === plate)) return toast('Ya existe un vehículo con esa patente', true);
   const v = {
     id: 'v_' + Date.now(), name: $('vName').value.trim(), plate, type: $('vType').value,
-    perf: 100 / parseFloat($('vPerf').value), price: parseFloat($('vPrice').value), km: parseInt($('vKm').value, 10),
-    parts: PARTS.map(p => ({ ...p, current: 0 })), fuel: [], services: []
+    perf: 100 / parseFloat($('vPerf').value), price: 0, km: parseInt($('vKm').value, 10),
+    parts: ($('vKind').value === 'Moto' ? PARTS_MOTO : PARTS).map(p => ({ ...p, current: 0 })), fuel: [], services: []
   };
   state.vehicles.push(v); state.currentId = v.id;
   save(); render(); e.target.reset();
@@ -521,13 +560,20 @@ $('fOdo').addEventListener('submit', e => {
 $('fFuel').addEventListener('submit', e => {
   e.preventDefault();
   const v = cur(); if (!v) return toast('Primero agregá un vehículo', true);
-  const km = parseInt($('fKm').value, 10);
+  const km = parseInt($('fKm').value, 10), date = $('fDate').value;
+  const liters = parseFloat($('fLit').value), price = parseFloat($('fPrice').value);
+  if (!(liters > 0) || !(price > 0) || !(km >= 0)) return toast('Revisá litros, precio y km', true);
+  if (!date || date > today()) return toast('La fecha no puede ser futura', true);
+  const before = v.fuel.filter(x => x.date <= date), after = v.fuel.filter(x => x.date > date);
+  if (before.some(x => x.km > km)) return toast('El km es menor al de una carga anterior', true);
+  if (after.some(x => x.km < km)) return toast('El km es mayor al de una carga posterior', true);
+  if (v.fuel.some(x => x.date === date && x.km === km && x.liters === liters)) return toast('Esa carga ya está registrada', true);
   if (km > v.km) addKm(v, km - v.km);
   v.fuel.push({
-    id: Date.now(), date: $('fDate').value, station: $('fStation').value.trim(),
-    liters: parseFloat($('fLit').value), price: parseFloat($('fPrice').value), km
+    id: Date.now(), date, station: $('fStation').value.trim(),
+    liters, price, km, full: $('fFull').value === '1'
   });
-  v.price = parseFloat($('fPrice').value);
+  if (!after.length) v.price = price;
   save(); render(); e.target.reset(); $('fDate').value = today(); toast('Carga registrada');
 });
 
@@ -558,25 +604,38 @@ $('fPart').addEventListener('submit', e => {
   save(); render(); e.target.reset(); toast('Componente agregado');
 });
 
-// ---------- Exportar CSV ----------
-$('btnCsv').addEventListener('click', () => {
-  if (!state.vehicles.length) return toast('No hay datos para exportar', true);
-  const q = x => '"' + String(x).replace(/"/g, '""') + '"';
-  let csv = 'Nombre,Patente,Tipo,Kilometraje,Consumo L/100km,Precio/L,Cargas,Servicios\n';
-  state.vehicles.forEach(v => {
-    csv += [q(v.name), q(v.plate), q(v.type), v.km, (100 / stats(v).perf).toFixed(2), v.price, v.fuel.length, v.services.length].join(',') + '\n';
-  });
-  const url = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' }));
+$('btnBackup').addEventListener('click', () => {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(state)], { type: 'application/json' }));
   const a = document.createElement('a');
-  a.href = url; a.download = 'flota_vehiculos.csv';
+  a.href = url; a.download = 'fleetcontrol_respaldo_' + today() + '.json';
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
-  toast('CSV exportado');
+  toast('Respaldo descargado');
+});
+$('btnRestore').addEventListener('click', () => $('fileRestore').click());
+$('fileRestore').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const s = JSON.parse(r.result);
+      if (!s || !Array.isArray(s.vehicles)) throw new Error('formato');
+      if (!confirm('Esto reemplaza todos los datos actuales. ¿Continuar?')) return;
+      state = clean(s);
+      if (!state.vehicles.some(v => v.id === state.currentId)) state.currentId = state.vehicles[0] ? state.vehicles[0].id : null;
+      save(); render(); toast('Respaldo restaurado');
+    } catch (err) { toast('Archivo de respaldo inválido', true); }
+  };
+  r.readAsText(f);
+  e.target.value = '';
 });
 
 $('rScope').addEventListener('change', renderReport);
 $('rPeriod').addEventListener('change', renderReport);
-$('btnPrint').addEventListener('click', () => window.print());
+$('btnPrint').addEventListener('click', () => {
+  toast('En el diálogo elegí "Guardar como PDF"');
+  setTimeout(() => window.print(), 600);
+});
 
 // ---------- Inicio ----------
 $('fDate').value = today();
