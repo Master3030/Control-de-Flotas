@@ -222,7 +222,7 @@ function clean(s) {
   s.vehicles = s.vehicles.filter(v => v && Array.isArray(v.parts) && isFinite(v.km) && v.perf > 0);
   s.vehicles.forEach(v => {
     v.price = v.price > 0 ? v.price : 0;
-    v.fuel = Array.isArray(v.fuel) ? v.fuel.filter(x => x.liters > 0 && x.price > 0 && isFinite(x.km)) : [];
+    v.fuel = Array.isArray(v.fuel) ? v.fuel.filter(x => x.liters > 0 && x.price > 0 && isFinite(x.km)).map(x => ({ ...x, full: x.full === true || x.full === false ? x.full : null })) : [];
     v.services = Array.isArray(v.services) ? v.services : [];
   });
   return s;
@@ -255,25 +255,28 @@ function addKm(v, delta) {
   v.parts.forEach(p => p.current += delta);
 }
 
+// Consumo real: solo entre cargas marcadas como tanque lleno (primera y última).
+// Las cargas intermedias (parciales o de tipo desconocido) suman como combustible consumido.
+function calc(list) {
+  const f = [...list].sort((a, b) => a.km - b.km || a.date.localeCompare(b.date));
+  const full = f.map((x, i) => i).filter(i => f[i].full === true);
+  const none = { real: false, dist: 0, L: 0, C: 0 };
+  if (full.length < 2) return none;
+  const a = full[0], b = full[full.length - 1], dist = f[b].km - f[a].km;
+  const seg = f.slice(a + 1, b + 1);
+  const L = seg.reduce((s, x) => s + x.liters, 0);
+  const C = seg.reduce((s, x) => s + x.liters * x.price, 0);
+  return dist > 0 && L > 0 ? { real: true, dist, L, C } : none;
+}
+
 function stats(v) {
-  const f = [...v.fuel].sort((a, b) => a.km - b.km || a.date.localeCompare(b.date));
-  const liters = f.reduce((s, x) => s + x.liters, 0);
-  const cost = f.reduce((s, x) => s + x.liters * x.price, 0);
+  const liters = v.fuel.reduce((s, x) => s + x.liters, 0);
+  const cost = v.fuel.reduce((s, x) => s + x.liters * x.price, 0);
   const last = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km)[0];
-  let perf = v.perf, cpk = (last ? last.price : v.price) / v.perf, real = false, dist = 0, cL = 0, cC = 0;
-  const src = last ? 'carga' : 'base';
-  // Solo se usan cargas de tanque lleno como referencia (primera y última).
-  // Las cargas parciales intermedias suman como combustible consumido.
-  const full = f.map((x, i) => i).filter(i => f[i].full !== false);
-  if (full.length >= 2) {
-    const a = full[0], b = full[full.length - 1];
-    const d = f[b].km - f[a].km;
-    const seg = f.slice(a + 1, b + 1);
-    const L = seg.reduce((s, x) => s + x.liters, 0);
-    const C = seg.reduce((s, x) => s + x.liters * x.price, 0);
-    if (d > 0 && L > 0) { perf = d / L; cpk = C / d; real = true; dist = d; cL = L; cC = C; }
-  }
-  return { liters, cost, perf, cpk, real, src, dist, cL, cC };
+  let perf = v.perf, cpk = (last ? last.price : v.price) / v.perf;
+  const c = calc(v.fuel);
+  if (c.real) { perf = c.dist / c.L; cpk = c.C / c.dist; }
+  return { liters, cost, perf, cpk, real: c.real, src: last ? 'carga' : 'base', dist: c.dist, cL: c.L, cC: c.C };
 }
 
 function partState(p) {
@@ -320,12 +323,14 @@ function renderDashboard(v) {
   $('m1').textContent = num(v.km) + ' km';
   $('m1s').textContent = v.type;
   $('m2').textContent = num(100 / s.perf, 1) + ' L/100 km';
-  $('m2s').textContent = s.real ? 'Real, tanque lleno a lleno' : 'Declarado (faltan 2 cargas con tanque lleno)';
+  const unk = v.fuel.filter(x => x.full === null).length;
+  $('m2s').textContent = s.real ? 'REAL: ' + num(s.dist) + ' km con ' + num(s.cL, 1) + ' L (tanque lleno a lleno)'
+    : 'ESTIMADO (declarado): faltan 2 cargas con tanque lleno' + (unk ? ' · ' + unk + ' carga(s) sin tipo, marcalas en Combustible' : '');
   $('m3').textContent = money(s.cost);
   $('m3s').textContent = num(s.liters, 1) + ' L pagados' + (s.real ? ' · consumido est.: ' + money(s.cC) : '');
   $('m4').textContent = s.cpk > 0 ? money(s.cpk) : '—';
-  $('m4s').textContent = s.real ? 'Real: ' + money(s.cC) + ' en ' + num(s.dist) + ' km'
-    : s.src === 'carga' ? 'Precio de tu última carga × ' + num(100 / v.perf, 1) + ' L/100 km'
+  $('m4s').textContent = s.real ? 'REAL: ' + money(s.cC) + ' en ' + num(s.dist) + ' km (' + num(s.cL, 1) + ' L)'
+    : s.src === 'carga' ? 'ESTIMADO: precio de tu última carga × ' + num(100 / v.perf, 1) + ' L/100 km'
     : 'Se calcula con tu primera carga';
   if (document.activeElement !== $('odoKm')) $('odoKm').value = v.km;
   $('partsA').innerHTML = partsHTML(v, false);
@@ -357,7 +362,7 @@ function renderFuel(v) {
   const perf = {};
   let prev = -1;
   asc.forEach((x, i) => {
-    if (x.full === false) return;
+    if (x.full !== true) return;
     if (prev >= 0) {
       const L = asc.slice(prev + 1, i + 1).reduce((s, y) => s + y.liters, 0), d = x.km - asc[prev].km;
       if (d > 0 && L > 0) perf[x.id] = d / L;
@@ -365,10 +370,10 @@ function renderFuel(v) {
     prev = i;
   });
   const rows = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km).map(x => `<tr>
-    <td>${fdate(x.date)}</td><td>${esc(x.station || '-')}</td><td>${num(x.liters, 2)} L${x.full === false ? ' (parcial)' : ''}</td>
+    <td>${fdate(x.date)}</td><td>${esc(x.station || '-')}</td><td>${num(x.liters, 2)} L${x.full === true ? '' : x.full === false ? ' (parcial)' : ' (tipo ?)'}</td>
     <td>${money(x.price)}</td><td>${money(x.liters * x.price)}</td><td>${num(x.km)} km</td>
     <td>${perf[x.id] ? num(100 / perf[x.id], 1) + ' L/100 km' : '-'}</td>
-    <td><button class="btn red sm" data-act="delfuel" data-id="${x.id}">✕</button></td></tr>`).join('');
+    <td style="white-space:nowrap"><button class="btn ghost sm" data-act="togfull" data-id="${x.id}">Tipo</button> <button class="btn red sm" data-act="delfuel" data-id="${x.id}">✕</button></td></tr>`).join('');
   box.innerHTML = `<table><thead><tr><th>Fecha</th><th>Estación</th><th>Litros</th><th>Precio/L</th><th>Total</th><th>Km</th><th>Consumo</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -398,15 +403,17 @@ function renderReport() {
   const from = days ? isoLocal(Date.now() - days * 864e5) : '0000-00-00';
   const rows = list.map(v => {
     const fuel = v.fuel.filter(x => x.date >= from), svc = v.services.filter(x => x.date >= from);
-    const kms = fuel.map(x => x.km);
-    const dist = kms.length > 1 ? Math.max(...kms) - Math.min(...kms) : 0;
+    const c = calc(fuel);
     const liters = fuel.reduce((s, x) => s + x.liters, 0);
     const fcost = fuel.reduce((s, x) => s + x.liters * x.price, 0);
     const scost = svc.reduce((s, x) => s + x.cost, 0);
-    return { v, fuel, svc, dist, liters, fcost, scost, total: fcost + scost, st: stats(v) };
+    return { v, fuel, svc, c, liters, fcost, scost, total: fcost + scost };
   });
   const sum = k => rows.reduce((s, r) => s + r[k], 0);
-  const F = sum('fcost'), S = sum('scost'), T = F + S, D = sum('dist'), L = sum('liters');
+  const F = sum('fcost'), S = sum('scost'), T = F + S, L = sum('liters');
+  const rr = rows.filter(r => r.c.real);
+  const D = rr.reduce((s, r) => s + r.c.dist, 0), CL = rr.reduce((s, r) => s + r.c.L, 0);
+  const CC = rr.reduce((s, r) => s + r.c.C, 0), SR = rr.reduce((s, r) => s + r.scost, 0);
   const pct = x => T ? Math.round(x / T * 100) : 0;
 
   const months = {};
@@ -422,10 +429,11 @@ function renderReport() {
 
   const tips = [];
   if (T) tips.push(`El combustible representa el ${pct(F)}% del gasto y el mantenimiento/otros el ${pct(S)}%.`);
-  if (D > 0) tips.push(`Costo operativo total: ${money(T / D)} por km (${money(F / D)} solo en combustible).`);
+  if (D > 0) tips.push(`Costo operativo medido: ${money((CC + SR) / D)} por km (${money(CC / D)} en combustible consumido y ${money(SR / D)} en servicios).`);
+  else tips.push('Faltan datos: se necesitan 2 cargas con tanque lleno dentro del período para medir el consumo.');
   rows.forEach(r => {
-    if (!r.st.real) return;
-    const real = 100 / r.st.perf, dec = 100 / r.v.perf;
+    if (!r.c.real) return;
+    const real = 100 * r.c.L / r.c.dist, dec = 100 / r.v.perf;
     if (Math.abs(real - dec) / dec > 0.1) {
       tips.push(`${r.v.name}: consume ${num(real, 1)} L/100 km reales contra ${num(dec, 1)} declarados (${real > dec ? 'conviene revisarlo' : 'mejor de lo esperado'}).`);
     }
@@ -442,18 +450,18 @@ function renderReport() {
   const who = all ? 'Toda la flota (' + list.length + ' vehículos)' : esc(list[0].name) + ' - ' + esc(list[0].plate);
   const monthRows = mKeys.map(m => `<tr><td>${m.split('-').reverse().join('/')}</td><td>${money(months[m].f)}</td><td>${money(months[m].s)}</td><td><b>${money(months[m].f + months[m].s)}</b></td></tr>`).join('');
   const vehRows = rows.map(r => `<tr><td>${esc(r.v.name)}<br><small>${esc(r.v.plate)}</small></td>
-    <td>${num(r.dist)}</td><td>${num(r.liters, 1)}</td><td>${money(r.fcost)}</td><td>${money(r.scost)}</td>
-    <td><b>${money(r.total)}</b></td><td>${r.dist > 0 ? money(r.total / r.dist) : '-'}</td><td>${num(100 / r.st.perf, 1)}</td></tr>`).join('');
+    <td>${num(r.liters, 1)}</td><td>${money(r.fcost)}</td><td>${money(r.scost)}</td><td><b>${money(r.total)}</b></td>
+    <td>${r.c.real ? num(r.c.dist) : '-'}</td><td>${r.c.real ? money(r.c.C / r.c.dist) : '-'}</td><td>${r.c.real ? num(100 * r.c.L / r.c.dist, 1) : '-'}</td></tr>`).join('');
 
   box.innerHTML = `
   <div class="card"><div class="ct">Reporte ejecutivo · FleetControl Pro</div>
     <div style="font-size:18px;font-weight:700">${who}</div>
     <div class="ms">${per} · Generado el ${fdate(today())}</div></div>
   <div class="metrics">
-    <div class="metric"><h3>Gasto total</h3><div class="mv">${money(T)}</div><div class="ms">Combustible + servicios</div></div>
-    <div class="metric"><h3>Combustible</h3><div class="mv">${money(F)}</div><div class="ms">${num(L, 1)} L · ${pct(F)}%</div></div>
+    <div class="metric"><h3>Gasto total</h3><div class="mv">${money(T)}</div><div class="ms">Pagado en el período</div></div>
+    <div class="metric"><h3>Combustible</h3><div class="mv">${money(F)}</div><div class="ms">${num(L, 1)} L pagados · ${pct(F)}%</div></div>
     <div class="metric"><h3>Mantenimiento y otros</h3><div class="mv">${money(S)}</div><div class="ms">${pct(S)}% del gasto</div></div>
-    <div class="metric"><h3>Costo por km</h3><div class="mv">${D > 0 ? money(T / D) : '—'}</div><div class="ms">${num(D)} km registrados en cargas</div></div>
+    <div class="metric"><h3>Combustible por km</h3><div class="mv">${D > 0 ? money(CC / D) : '—'}</div><div class="ms">${D > 0 ? 'REAL: ' + num(D) + ' km · ' + num(CL, 1) + ' L consumidos' : 'Datos insuficientes (2 cargas con tanque lleno)'}</div></div>
   </div>
   <div class="card"><div class="ct">Distribución del gasto</div>
     <div class="bar" style="height:14px;display:flex"><div style="width:${pct(F)}%;background:var(--blue)"></div><div style="width:${pct(S)}%;background:var(--orange)"></div></div>
@@ -462,7 +470,7 @@ function renderReport() {
   <div class="card"><div class="ct">Evolución mensual</div>${mKeys.length
     ? `<div class="tw"><table><thead><tr><th>Mes</th><th>Combustible</th><th>Servicios</th><th>Total</th></tr></thead><tbody>${monthRows}</tbody></table></div>`
     : '<div class="empty">Sin movimientos en el período.</div>'}</div>
-  <div class="card"><div class="ct">Detalle por vehículo</div><div class="tw"><table><thead><tr><th>Vehículo</th><th>Km</th><th>Litros</th><th>Combustible</th><th>Servicios</th><th>Total</th><th>Costo/km</th><th>L/100 km</th></tr></thead><tbody>${vehRows}</tbody></table></div></div>
+  <div class="card"><div class="ct">Detalle por vehículo</div><div class="tw"><table><thead><tr><th>Vehículo</th><th>Litros pagados</th><th>Combustible pagado</th><th>Servicios</th><th>Total pagado</th><th>Km medidos</th><th>Comb./km</th><th>L/100 km</th></tr></thead><tbody>${vehRows}</tbody></table></div></div>
   <div class="card"><div class="ct">Componentes que requieren atención</div>${alerts.length
     ? alerts.map(a => `<div class="rtip">${a.st.lvl === 2 ? '🔴' : '🟠'} ${esc(a.v.name)} · ${esc(a.p.name)}: ${a.st.txt}</div>`).join('')
     : '<div class="empty">✅ Todo en orden.</div>'}</div>`;
@@ -511,6 +519,10 @@ document.addEventListener('click', e => {
   if (act === 'delfuel' && v && confirm('¿Eliminar esta carga?')) {
     v.fuel = v.fuel.filter(x => String(x.id) !== b.dataset.id);
     save(); render();
+  }
+  if (act === 'togfull' && v) {
+    const x = v.fuel.find(y => String(y.id) === b.dataset.id);
+    if (x) { x.full = x.full === true ? false : true; save(); render(); toast(x.full ? 'Marcada como tanque lleno' : 'Marcada como parcial'); }
   }
   if (act === 'adj' && v) {
     const p = v.parts[b.dataset.i];
@@ -568,6 +580,8 @@ $('fFuel').addEventListener('submit', e => {
   if (before.some(x => x.km > km)) return toast('El km es menor al de una carga anterior', true);
   if (after.some(x => x.km < km)) return toast('El km es mayor al de una carga posterior', true);
   if (v.fuel.some(x => x.date === date && x.km === km && x.liters === liters)) return toast('Esa carga ya está registrada', true);
+  if (km < v.km && !confirm('Es una carga histórica (el odómetro actual es ' + num(v.km) + ' km). ¿Registrarla?')) return;
+  if (km - v.km > 5000 && !confirm('El km sube ' + num(km - v.km) + ' km respecto al odómetro actual. ¿Es correcto?')) return;
   if (km > v.km) addKm(v, km - v.km);
   v.fuel.push({
     id: Date.now(), date, station: $('fStation').value.trim(),
