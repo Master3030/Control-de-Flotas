@@ -58,6 +58,7 @@ td{padding:11px 10px;border-bottom:1px solid var(--bd);color:var(--dim)}
 .sidebar{width:100%;top:auto;bottom:0;height:auto;padding:6px;border-right:0;border-top:1px solid var(--bd)}
 .logo{display:none}.nav{flex-direction:row}.nav-item{flex:1;text-align:center;padding:10px 2px;font-size:12px}
 .main{margin-left:0;padding:16px 14px 90px}.grid2{grid-template-columns:1fr}.actions,.actions select{width:100%}}
+button:focus-visible,.nav-item:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .rtip{padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px;color:var(--dim)}.rtip:last-child{border:0}
 @media print{.sidebar,.top .actions,.no-print,#toast{display:none!important}
 body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
@@ -144,8 +145,9 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
         <div><label>Litros</label><input type="number" id="fLit" min="0.1" step="0.01" required></div>
         <div><label>Precio/L</label><input type="number" id="fPrice" min="1" step="any" required></div>
         <div><label>Km al cargar</label><input type="number" id="fKm" min="0" required></div>
-        <div><label>¿Tanque lleno?</label><select id="fFull"><option value="1">Sí, llené el tanque</option><option value="0">No, carga parcial</option></select></div>
-        <button class="btn" type="submit">Guardar carga</button>
+        <div><label>¿Tanque lleno?</label><select id="fFull"><option value="1">Sí, llené el tanque</option><option value="0">No, carga parcial</option><option value="">Sin confirmar</option></select></div>
+        <button class="btn" id="fSubmit" type="submit">Guardar carga</button>
+        <button class="btn ghost" id="fCancel" type="button" style="display:none">Cancelar</button>
       </form>
     </div>
     <div class="card"><div class="ct">Historial de cargas</div><div class="tw" id="fuelTable"></div></div>
@@ -153,13 +155,13 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
 
   <!-- SERVICIO -->
   <div id="view-maintenance" class="view">
-    <div class="card"><div class="ct">Estado de componentes</div><div id="partsM"></div></div>
+    <div class="card"><div class="ct">Estado de componentes (intervalos de referencia: ajustalos según el fabricante)</div><div id="partsM"></div></div>
     <div class="card">
       <div class="ct">Agregar componente</div>
       <form id="fPart" class="form">
         <div><label>Nombre</label><input id="pName" maxlength="40" placeholder="Ej: Correa de distribución" required></div>
         <div><label>Cambiar cada (km)</label><input type="number" id="pInt" min="1" required></div>
-        <div><label>Km desde el último cambio</label><input type="number" id="pUsed" min="0" value="0"></div>
+        <div><label>Km desde el último cambio</label><input type="number" id="pUsed" min="0" placeholder="Vacío = no lo sé"></div>
         <button class="btn" type="submit">Agregar</button>
       </form>
     </div>
@@ -169,6 +171,7 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
         <div><label>Componente</label><select id="sPart"></select></div>
         <div><label>Detalle (obligatorio si es otro gasto)</label><input id="sNote" maxlength="40" placeholder="Ej: Lavado, seguro, multa"></div>
         <div><label>Fecha</label><input type="date" id="sDate" required></div>
+        <div><label>Km del servicio (vacío = actual)</label><input type="number" id="sKm" min="0"></div>
         <div><label>Taller</label><input id="sShop" maxlength="40" placeholder="Opcional"></div>
         <div><label>Costo</label><input type="number" id="sCost" min="0" value="0"></div>
         <button class="btn" type="submit">Registrar</button>
@@ -183,7 +186,7 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
       <div class="form">
         <div><label>Alcance</label><select id="rScope"><option value="one">Vehículo seleccionado</option><option value="all">Toda la flota</option></select></div>
         <div><label>Período</label><select id="rPeriod"><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="365">Último año</option><option value="0">Todo el historial</option></select></div>
-        <button class="btn" id="btnPrint" type="button">📄 Descargar PDF</button>
+        <button class="btn" id="btnPrint" type="button">📄 Imprimir / Guardar como PDF</button>
       </div>
     </div>
     <div id="reportBox"></div>
@@ -199,8 +202,15 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 const money = n => CURRENCY + ' ' + Math.round(n).toLocaleString('es-PY');
 const num = (n, d = 0) => Number(n).toLocaleString('es-PY', { maximumFractionDigits: d });
 const fdate = d => d.split('-').reverse().join('/');
-const isoLocal = ms => new Date(ms - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+const isoLocal = ms => { const d = new Date(ms), p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
 const today = () => isoLocal(Date.now());
+const fin = n => Number.isFinite(n);
+let _seq = 0;
+const uid = () => Date.now() * 1000 + (_seq++ % 1000);
+function okDate(d) {
+  try { return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && new Date(d + 'T00:00:00Z').toISOString().slice(0, 10) === d; }
+  catch (e) { return false; }
+}
 
 const PARTS = [
   { name: 'Aceite y filtros', icon: '🛢️', interval: 10000, color: '#3b82f6' },
@@ -219,24 +229,48 @@ const PARTS_MOTO = [
 
 // ---------- Estado ----------
 function clean(s) {
-  // Normaliza y valida también los datos anidados del respaldo/localStorage.
-  const finite = n => Number.isFinite(Number(n));
-  const text = (x, max = 120) => String(x ?? '').trim().slice(0, max);
-  const validDate = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && !Number.isNaN(Date.parse(d + 'T00:00:00'));
-  const vehicles = Array.isArray(s?.vehicles) ? s.vehicles : [];
-  const cleaned = vehicles.filter(v => v && typeof v === 'object' && text(v.id, 80) && text(v.name, 80) && finite(v.km) && Number(v.km) >= 0 && finite(v.perf) && Number(v.perf) > 0)
-    .map(v => {
-      const parts = (Array.isArray(v.parts) ? v.parts : []).filter(p => p && typeof p === 'object' && text(p.name, 80) && finite(p.interval) && Number(p.interval) > 0 && finite(p.current) && Number(p.current) >= 0)
-        .map(p => ({ name: text(p.name, 80), icon: text(p.icon || '🔧', 8), interval: Number(p.interval), current: Number(p.current), color: /^#[0-9a-f]{3,8}$/i.test(p.color || '') ? p.color : '#3b82f6' }));
-      const fuel = (Array.isArray(v.fuel) ? v.fuel : []).filter(x => x && typeof x === 'object' && validDate(x.date) && finite(x.km) && Number(x.km) >= 0 && finite(x.liters) && Number(x.liters) > 0 && finite(x.price) && Number(x.price) > 0)
-        .map(x => ({ id: x.id ?? ('fuel_' + Math.random().toString(36).slice(2)), date: x.date, station: text(x.station, 80), km: Number(x.km), liters: Number(x.liters), price: Number(x.price), full: x.full === true ? true : x.full === false ? false : null }));
-      const services = (Array.isArray(v.services) ? v.services : []).filter(x => x && typeof x === 'object' && validDate(x.date) && finite(x.km) && Number(x.km) >= 0 && finite(x.cost) && Number(x.cost) >= 0)
-        .map(x => ({ date: x.date, part: text(x.part || 'Gasto', 100), km: Number(x.km), shop: text(x.shop, 80), cost: Number(x.cost), interval: finite(x.interval) && Number(x.interval) > 0 ? Number(x.interval) : 0 }));
-      return { id: text(v.id, 80), name: text(v.name, 80), plate: text(v.plate, 20), type: text(v.type, 20), perf: Number(v.perf), price: finite(v.price) && Number(v.price) > 0 ? Number(v.price) : 0, km: Number(v.km), parts, fuel, services };
+  let dropped = 0;
+  const COLOR = /^#[0-9a-f]{6}$/i;
+  const str = (x, n) => String(x == null ? '' : x).slice(0, n);
+  const arr = x => Array.isArray(x) ? x : [];
+  const fin = x => x != null && x !== '' && typeof x !== 'boolean' && Number.isFinite(+x);
+  const pos = (x, max) => fin(x) && +x > 0 && +x <= max, nn = (x, max) => fin(x) && +x >= 0 && +x <= max;
+  const T = today();
+  const ids = new Set(), plates = new Set(), out = [];
+  arr(s.vehicles).forEach(v => {
+    if (!v || typeof v !== 'object') { dropped++; return; }
+    const name = str(v.name, 40).trim(), plate = str(v.plate, 12).trim().toUpperCase();
+    if (!name || !plate || !nn(v.km, 5e6) || !pos(v.perf, 100) || plates.has(plate)) { dropped++; return; }
+    plates.add(plate);
+    const parts = arr(v.parts).filter(p => p && pos(p.interval, 1e6) && nn(p.current, 1e7) && str(p.name, 40).trim()).map(p => ({
+      name: str(p.name, 40).trim(), icon: str(p.icon || '🔧', 4), interval: +p.interval, current: +p.current,
+      color: COLOR.test(p.color) ? p.color : '#3b82f6', confirmed: p.confirmed === false ? false : true
+    }));
+    const used = new Set();
+    const fuel = arr(v.fuel).filter(x => x && okDate(x.date) && x.date <= T && pos(x.liters, 2000) && pos(x.price, 1e7) && nn(x.km, 5e6)).map((x, i) => {
+      let id = Number(x.id);
+      if (!(id > 0) || !Number.isFinite(id) || used.has(id)) id = Date.now() + i + Math.random();
+      used.add(id);
+      return { id, date: x.date, station: str(x.station, 40), liters: +x.liters, price: +x.price, km: +x.km,
+        full: x.full === true || x.full === false ? x.full : null };
     });
-  const ids = new Set();
-  s.vehicles = cleaned.filter(v => !ids.has(v.id) && ids.add(v.id));
-  s.currentId = s.vehicles.some(v => v.id === s.currentId) ? s.currentId : (s.vehicles[0]?.id ?? null);
+    const services = arr(v.services).filter(x => x && okDate(x.date) && x.date <= T && nn(x.cost, 1e11) && nn(x.km, 5e6)).map(x => ({
+      date: x.date, part: str(x.part, 40), km: +x.km, shop: str(x.shop, 40), cost: +x.cost, interval: pos(x.interval, 1e6) ? +x.interval : 0
+    }));
+    dropped += (arr(v.parts).length - parts.length) + (arr(v.fuel).length - fuel.length) + (arr(v.services).length - services.length);
+    let id = str(v.id, 40);
+    if (!id || ids.has(id)) id = 'v_' + Date.now() + '_' + out.length;
+    ids.add(id);
+    // el odómetro nunca puede ser menor que el último registro
+    const km = Math.max(+v.km, ...fuel.map(x => x.km), ...services.map(x => x.km));
+    out.push({
+      id, name, plate, kind: v.kind === 'Moto' || v.kind === 'Auto' ? v.kind : undefined,
+      type: ['Nafta', 'Diésel', 'GNC'].includes(v.type) ? v.type : 'Nafta',
+      perf: +v.perf, price: fuel.length ? [...fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km || b.id - a.id)[0].price : 0, km, parts, fuel, services
+    });
+  });
+  s.vehicles = out;
+  clean.dropped = dropped;
   return s;
 }
 function load() {
@@ -247,13 +281,15 @@ function load() {
   return { vehicles: [], currentId: null };
 }
 let state = load();
+let saveOk = true;
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); return true; }
-  catch (e) { toast('No se pudo guardar los datos', true); return false; }
+  try { localStorage.setItem(KEY, JSON.stringify(state)); saveOk = true; return true; }
+  catch (e) { saveOk = false; toast('No se pudo guardar: los cambios se perderán al recargar', true); return false; }
 }
 const cur = () => state.vehicles.find(v => v.id === state.currentId) || null;
 
 function toast(msg, err) {
+  if (!saveOk && !err) return;
   const t = $('toast');
   t.textContent = msg;
   t.className = 'show' + (err ? ' err' : '');
@@ -262,6 +298,17 @@ function toast(msg, err) {
 }
 
 // ---------- Cálculos ----------
+function recalcPart(v, name) {
+  const p = v.parts.find(x => x.name === name);
+  if (!p) return;
+  const ks = v.services.filter(x => x.part === name && x.interval > 0).map(x => x.km);
+  if (ks.length) { p.current = Math.max(0, v.km - Math.max(...ks)); p.confirmed = true; }
+  else p.confirmed = false;
+}
+function syncPrice(v) {
+  const last = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km || (b.id || 0) - (a.id || 0))[0];
+  v.price = last ? last.price : 0;
+}
 function addKm(v, delta) {
   v.km += delta;
   v.parts.forEach(p => p.current += delta);
@@ -270,17 +317,15 @@ function addKm(v, delta) {
 // Consumo real: solo entre cargas marcadas como tanque lleno (primera y última).
 // Las cargas intermedias (parciales o de tipo desconocido) suman como combustible consumido.
 function intervals(list) {
-  // El orden temporal es la referencia. Ordenar primero por km podía ocultar
-  // cargas mal fechadas y fabricar intervalos de consumo incorrectos.
-  const f = [...list].sort((a, b) => a.date.localeCompare(b.date) || a.km - b.km);
+  const f = [...list].sort((a, b) => a.km - b.km || a.date.localeCompare(b.date) || (a.id || 0) - (b.id || 0));
   const out = [];
   let prev = -1;
   f.forEach((x, i) => {
     if (x.full !== true) return;
     if (prev >= 0) {
       const seg = f.slice(prev + 1, i + 1), d = x.km - f[prev].km;
-      const L = seg.reduce((sum, y) => sum + y.liters, 0);
-      if (d > 0 && L > 0) out.push({ date: x.date, dist: d, L, C: seg.reduce((sum, y) => sum + y.liters * y.price, 0), endId: x.id });
+      const L = seg.reduce((s, y) => s + y.liters, 0);
+      if (d > 0 && L > 0) out.push({ start: f[prev].date, date: x.date, dist: d, L, C: seg.reduce((s, y) => s + y.liters * y.price, 0) });
     }
     prev = i;
   });
@@ -290,32 +335,36 @@ function intervals(list) {
 // Suma los intervalos cuyo tanque lleno de cierre cae dentro del período (from).
 // El tanque lleno inicial puede ser anterior al período.
 function calc(list, from) {
-  // Si los km retroceden según la fecha, no publicamos un consumo 'real' engañoso.
-  if (inconsistent(list)) return { real: false, dist: 0, L: 0, C: 0 };
   const iv = intervals(list).filter(i => !from || i.date >= from);
   const dist = iv.reduce((s, i) => s + i.dist, 0);
   const L = iv.reduce((s, i) => s + i.L, 0);
   const C = iv.reduce((s, i) => s + i.C, 0);
-  return dist > 0 && L > 0 ? { real: true, dist, L, C } : { real: false, dist: 0, L: 0, C: 0 };
+  return dist > 0 && L > 0 ? { real: true, dist, L, C, start: iv.map(i => i.start).sort()[0], end: iv.map(i => i.date).sort().pop() } : { real: false, dist: 0, L: 0, C: 0 };
 }
 
 // Detecta cargas cuyo km contradice el orden de las fechas.
-function inconsistent(list) {
+function badPairs(list) {
   const f = [...list].sort((a, b) => a.date.localeCompare(b.date) || a.km - b.km);
-  return f.some((x, i) => i > 0 && x.km < f[i - 1].km);
+  return f.filter((x, i) => i > 0 && x.km < f[i - 1].km);
 }
+function inconsistent(list) { return badPairs(list).length > 0; }
 
 function stats(v) {
   const liters = v.fuel.reduce((s, x) => s + x.liters, 0);
   const cost = v.fuel.reduce((s, x) => s + x.liters * x.price, 0);
   const last = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km)[0];
   let perf = v.perf, cpk = (last ? last.price : v.price) / v.perf;
-  const c = calc(v.fuel);
+  const bad = inconsistent(v.fuel);
+  const c = bad ? { real: false, dist: 0, L: 0, C: 0 } : calc(v.fuel);
   if (c.real) { perf = c.dist / c.L; cpk = c.C / c.dist; }
-  return { liters, cost, perf, cpk, real: c.real, src: last ? 'carga' : 'base', dist: c.dist, cL: c.L, cC: c.C };
+  return { liters, cost, perf, cpk, real: c.real, src: last ? 'carga' : 'base', dist: c.dist, cL: c.L, cC: c.C, bad };
 }
 
 function partState(p) {
+  const r = partStateRaw(p);
+  return p.confirmed === false ? { ...r, cls: '', lvl: 0, txt: '⚠️ Desgaste sin confirmar' } : r;
+}
+function partStateRaw(p) {
   const pct = p.current / p.interval * 100;
   const left = p.interval - p.current;
   if (pct >= 100) return { cls: 'danger', pct: 100, txt: 'VENCIDO por ' + num(-left) + ' km', lvl: 2 };
@@ -337,7 +386,7 @@ function partsHTML(v, withAdjust) {
   return v.parts.map((p, i) => {
     const st = partState(p);
     return `<div class="part ${st.cls}">
-      <div class="pi">${p.icon}</div>
+      <div class="pi">${esc(p.icon)}</div>
       <div class="pb"><h4>${esc(p.name)}</h4>
         <div class="bar"><div class="fill" style="width:${st.pct}%;background:${p.color}"></div></div>
         <div class="pt">${num(p.current)} / ${num(p.interval)} km · ${st.txt}</div></div>
@@ -357,23 +406,25 @@ function renderDashboard(v) {
   }
   const s = stats(v);
   $('m1').textContent = num(v.km) + ' km';
-  $('m1s').textContent = v.type;
+  $('m1s').textContent = (v.kind ? v.kind + ' · ' : '') + v.type;
   $('m2').textContent = num(100 / s.perf, 1) + ' L/100 km';
   const unk = v.fuel.filter(x => x.full === null).length;
   $('m2s').textContent = s.real ? 'REAL: ' + num(s.dist) + ' km con ' + num(s.cL, 1) + ' L (tanque lleno a lleno)'
-    : 'ESTIMADO (declarado): faltan 2 cargas con tanque lleno' + (unk ? ' · ' + unk + ' carga(s) sin tipo, marcalas en Combustible' : '');
+    : (s.bad ? 'ESTIMADO (declarado): hay cargas con fechas y km contradictorios, revisalas' : 'ESTIMADO (declarado): no hay un intervalo válido de tanque lleno a tanque lleno') + (unk ? ' · ' + unk + ' carga(s) sin tipo, marcalas en Combustible' : '');
   $('m3').textContent = money(s.cost);
   $('m3s').textContent = num(s.liters, 1) + ' L pagados' + (s.real ? ' · consumido est.: ' + money(s.cC) : '');
   $('m4').textContent = s.cpk > 0 ? money(s.cpk) : '—';
   $('m4s').textContent = s.real ? 'REAL: ' + money(s.cC) + ' en ' + num(s.dist) + ' km (' + num(s.cL, 1) + ' L)'
     : s.src === 'carga' ? 'ESTIMADO: precio de tu última carga × ' + num(100 / v.perf, 1) + ' L/100 km'
-    : 'Se calcula con tu primera carga';
+    : 'Registrá una carga para estimar el costo por km';
   if (document.activeElement !== $('odoKm')) $('odoKm').value = v.km;
   $('partsA').innerHTML = partsHTML(v, false);
+  const unc = v.parts.filter(p => p.confirmed === false).length;
   const al = v.parts.map(p => ({ p, st: partState(p) })).filter(x => x.st.lvl > 0);
   $('alerts').innerHTML = al.length
     ? al.map(x => `<div class="alert">${x.st.lvl === 2 ? '🔴' : '🟠'} ${esc(x.p.name)}<span>${x.st.txt}</span></div>`).join('')
-    : '<div class="empty">✅ Todo en orden</div>';
+    : (unc ? '' : '<div class="empty">✅ Todo en orden</div>');
+  if (unc) $('alerts').innerHTML += '<div class="alert">⚠️ ' + unc + ' componente(s) con desgaste sin confirmar<span>Ajustalos en Servicio para activar sus alertas</span></div>';
 }
 
 function renderGallery() {
@@ -381,12 +432,13 @@ function renderGallery() {
   if (!state.vehicles.length) { g.innerHTML = '<div class="empty">Todavía no hay vehículos.</div>'; return; }
   g.innerHTML = state.vehicles.map(v => {
     const lvl = Math.max(0, ...v.parts.map(p => partState(p).lvl));
-    const cls = ['ok', 'warn', 'crit'][lvl], txt = ['Óptimo', 'Atención', 'Crítico'][lvl];
+    const pend = lvl === 0 && v.parts.some(p => p.confirmed === false);
+    const cls = pend ? 'warn' : ['ok', 'warn', 'crit'][lvl], txt = pend ? 'Pendiente de revisión' : ['Óptimo', 'Atención', 'Crítico'][lvl];
     return `<div class="vc ${v.id === state.currentId ? 'sel' : ''}" data-act="pick" data-id="${esc(v.id)}">
-      <h4>${esc(v.name)}</h4><small>${esc(v.plate)} · ${esc(v.type)}</small>
+      <h4>${esc(v.name)}</h4><small>${esc(v.plate)} · ${v.kind ? esc(v.kind) + ' · ' : ''}${esc(v.type)}</small>
       <div class="row"><span class="pill ${cls}">${txt}</span><span>${num(v.km)} km</span></div>
       <div class="row"><span>${v.price > 0 ? money(v.price) + '/L' : 'Sin cargas'}</span>
-      <button class="btn red sm" data-act="del" data-id="${esc(v.id)}">Eliminar</button></div>
+      <span><button class="btn ghost sm" data-act="pick" data-id="${esc(v.id)}">Elegir</button> <button class="btn ghost sm" data-act="editveh" data-id="${esc(v.id)}">Editar</button> <button class="btn red sm" data-act="del" data-id="${esc(v.id)}">Eliminar</button></span></div>
     </div>`;
   }).join('');
 }
@@ -394,14 +446,23 @@ function renderGallery() {
 function renderFuel(v) {
   const box = $('fuelTable');
   if (!v || !v.fuel.length) { box.innerHTML = '<div class="empty">Sin cargas registradas.</div>'; return; }
+  const asc = [...v.fuel].sort((a, b) => a.km - b.km || a.date.localeCompare(b.date) || (a.id || 0) - (b.id || 0));
   const perf = {};
-  intervals(v.fuel).forEach(i => { if (i.endId != null && i.L > 0 && i.dist > 0) perf[i.endId] = i.dist / i.L; });
+  let prev = -1;
+  asc.forEach((x, i) => {
+    if (x.full !== true) return;
+    if (prev >= 0) {
+      const L = asc.slice(prev + 1, i + 1).reduce((s, y) => s + y.liters, 0), d = x.km - asc[prev].km;
+      if (d > 0 && L > 0) perf[x.id] = d / L;
+    }
+    prev = i;
+  });
   const rows = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km).map(x => `<tr>
     <td>${fdate(x.date)}</td><td>${esc(x.station || '-')}</td><td>${num(x.liters, 2)} L${x.full === true ? '' : x.full === false ? ' (parcial)' : ' (tipo ?)'}</td>
     <td>${money(x.price)}</td><td>${money(x.liters * x.price)}</td><td>${num(x.km)} km</td>
     <td>${perf[x.id] ? num(100 / perf[x.id], 1) + ' L/100 km' : '-'}</td>
-    <td style="white-space:nowrap"><button class="btn ghost sm" data-act="togfull" data-id="${x.id}">Tipo</button> <button class="btn red sm" data-act="delfuel" data-id="${x.id}">✕</button></td></tr>`).join('');
-  box.innerHTML = (inconsistent(v.fuel) ? '<p style="color:var(--orange);font-size:13px;margin-bottom:10px">⚠️ Hay cargas cuyo km no coincide con el orden de las fechas. Revisalas: el consumo puede salir mal.</p>' : '') + `<table><thead><tr><th>Fecha</th><th>Estación</th><th>Litros</th><th>Precio/L</th><th>Total</th><th>Km</th><th>Consumo</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+    <td style="white-space:nowrap"><button class="btn ghost sm" data-act="editfuel" data-id="${x.id}">Editar</button> <button class="btn ghost sm" data-act="togfull" data-id="${x.id}">Tipo</button> <button class="btn red sm" data-act="delfuel" data-id="${x.id}">✕</button></td></tr>`).join('');
+  box.innerHTML = (inconsistent(v.fuel) ? '<p style="color:var(--orange);font-size:13px;margin-bottom:10px">⚠️ Cargas con km menor al de una carga anterior: ' + badPairs(v.fuel).slice(0, 3).map(x => fdate(x.date) + ' (' + num(x.km) + ' km)').join(', ') + '. Corregilas con Editar o eliminalas; mientras tanto el consumo no se muestra como real.</p>' : '') + `<table><thead><tr><th>Fecha</th><th>Estación</th><th>Litros</th><th>Precio/L</th><th>Total</th><th>Km</th><th>Consumo</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function renderService(v) {
@@ -416,7 +477,7 @@ function renderService(v) {
     <td>${fdate(x.date)}</td><td>${esc(x.part)}</td><td>${num(x.km)} km</td>
     <td>${esc(x.shop || '-')}</td><td>${money(x.cost)}</td>
     <td>${x.interval ? num(x.km + x.interval) + ' km' : '-'}</td>
-    <td><button class="btn red sm" data-act="delsvc" data-i="${i}">✕</button></td></tr>`).join('');
+    <td style="white-space:nowrap"><button class="btn ghost sm" data-act="editsvc" data-i="${i}">Editar</button> <button class="btn red sm" data-act="delsvc" data-i="${i}">✕</button></td></tr>`).join('');
   box.innerHTML = `<p style="margin-bottom:10px;color:var(--dim);font-size:13px">Total gastado: <b style="color:var(--tx)">${money(total)}</b></p>
     <table><thead><tr><th>Fecha</th><th>Detalle</th><th>Km</th><th>Taller</th><th>Costo</th><th>Próximo</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -427,10 +488,10 @@ function renderReport() {
   const all = $('rScope').value === 'all';
   const list = all ? state.vehicles : (cur() ? [cur()] : []);
   if (!list.length) { box.innerHTML = '<div class="card"><div class="empty">Agregá un vehículo para generar reportes.</div></div>'; return; }
-  const from = days ? isoLocal(Date.now() - days * 864e5) : '0000-00-00';
+  const from = days ? isoLocal(Date.now() - (days - 1) * 864e5) : '0000-00-00';
   const rows = list.map(v => {
     const fuel = v.fuel.filter(x => x.date >= from), svc = v.services.filter(x => x.date >= from);
-    const c = calc(v.fuel, from);
+    const c = inconsistent(v.fuel) ? { real: false, dist: 0, L: 0, C: 0 } : calc(v.fuel, from);
     const liters = fuel.reduce((s, x) => s + x.liters, 0);
     const fcost = fuel.reduce((s, x) => s + x.liters * x.price, 0);
     const scost = svc.reduce((s, x) => s + x.cost, 0);
@@ -442,6 +503,7 @@ function renderReport() {
   const D = rr.reduce((s, r) => s + r.c.dist, 0), CL = rr.reduce((s, r) => s + r.c.L, 0);
   const CC = rr.reduce((s, r) => s + r.c.C, 0), SR = rr.reduce((s, r) => s + r.scost, 0);
   const pct = x => T ? Math.round(x / T * 100) : 0;
+  const pS = T ? 100 - pct(F) : 0;
 
   const months = {};
   const addM = (d, k, val) => { const m = d.slice(0, 7); (months[m] = months[m] || { f: 0, s: 0 })[k] += val; };
@@ -453,11 +515,13 @@ function renderReport() {
 
   const alerts = [];
   rows.forEach(r => r.v.parts.forEach(p => { const st = partState(p); if (st.lvl) alerts.push({ v: r.v, p, st }); }));
+  const unc = [];
+  rows.forEach(r => r.v.parts.forEach(p => { if (p.confirmed === false) unc.push({ v: r.v, p }); }));
 
   const tips = [];
-  if (T) tips.push(`El combustible representa el ${pct(F)}% del gasto y el mantenimiento/otros el ${pct(S)}%.`);
-  if (D > 0) tips.push(`Costo de combustible medido: ${money(CC / D)} por km (${money(CC)} de combustible estimado entre cargas llenas). Los servicios se muestran aparte por fecha de pago.`);
-  else tips.push('Faltan datos válidos: se necesitan dos cargas con tanque lleno y kilometraje cronológico creciente para medir el consumo.');
+  if (T) tips.push(`El combustible representa el ${pct(F)}% del gasto y el mantenimiento/otros el ${pS}%.`);
+  if (D > 0) tips.push(`Costo operativo estimado: ${money((CC + SR) / D)} por km (${money(CC / D)} en combustible consumido y ${money(SR / D)} en servicios; los servicios son los pagados en el período y los km salen de intervalos cerrados, por lo que pueden no coincidir exactamente).`);
+  else tips.push('No hay intervalos de tanque lleno a tanque lleno cerrados en este período. Revisá el historial y registrá las cargas que falten.');
   rows.forEach(r => {
     if (!r.c.real) return;
     const real = 100 * r.c.L / r.c.dist, dec = 100 / r.v.perf;
@@ -470,9 +534,10 @@ function renderReport() {
     const top = mKeys.reduce((a, b) => tot(a) >= tot(b) ? a : b);
     tips.push(`Mes de mayor gasto: ${top.split('-').reverse().join('/')} (${money(tot(top))}).`);
   }
+  if (D > 0) tips.push('Intervalos de consumo medidos: del ' + fdate(rr.map(r => r.c.start).sort()[0]) + ' al ' + fdate(rr.map(r => r.c.end).sort().pop()) + ' (' + num(D) + ' km). El gasto pagado y estos intervalos pueden no cubrir exactamente las mismas fechas.');
   if (rows.some(r => inconsistent(r.v.fuel))) tips.push('⚠️ Hay cargas con km que contradicen el orden de las fechas; revisá el historial de combustible.');
   const over = alerts.filter(a => a.st.lvl === 2).length;
-  tips.push(over ? `⚠️ ${over} componente(s) requieren atención inmediata.` : '✅ No hay componentes en estado crítico.');
+  tips.push(over ? `⚠️ ${over} componente(s) requieren atención inmediata.` : unc.length ? `⚠️ ${unc.length} componente(s) con desgaste sin confirmar: no se puede asegurar su estado.` : '✅ No hay componentes en estado crítico.');
 
   const per = $('rPeriod').selectedOptions[0].textContent;
   const who = all ? 'Toda la flota (' + list.length + ' vehículos)' : esc(list[0].name) + ' - ' + esc(list[0].plate);
@@ -488,23 +553,24 @@ function renderReport() {
   <div class="metrics">
     <div class="metric"><h3>Gasto total</h3><div class="mv">${money(T)}</div><div class="ms">Pagado en el período</div></div>
     <div class="metric"><h3>Combustible</h3><div class="mv">${money(F)}</div><div class="ms">${num(L, 1)} L pagados · ${pct(F)}%</div></div>
-    <div class="metric"><h3>Mantenimiento y otros</h3><div class="mv">${money(S)}</div><div class="ms">${pct(S)}% del gasto</div></div>
-    <div class="metric"><h3>Combustible por km</h3><div class="mv">${D > 0 ? money(CC / D) : '—'}</div><div class="ms">${D > 0 ? 'REAL: ' + num(D) + ' km · ' + num(CL, 1) + ' L medidos por cargas llenas' : 'Datos insuficientes (2 cargas con tanque lleno)'}</div></div>
+    <div class="metric"><h3>Mantenimiento y otros</h3><div class="mv">${money(S)}</div><div class="ms">${pS}% del gasto</div></div>
+    <div class="metric"><h3>Combustible por km</h3><div class="mv">${D > 0 ? money(CC / D) : '—'}</div><div class="ms">${D > 0 ? 'REAL: ' + num(D) + ' km · ' + num(CL, 1) + ' L (intervalos cerrados en el período)' : 'Sin intervalos de tanque lleno a tanque lleno cerrados en el período'}</div></div>
   </div>
   <div class="card"><div class="ct">Distribución del gasto</div>
-    <div class="bar" style="height:14px;display:flex"><div style="width:${pct(F)}%;background:var(--blue)"></div><div style="width:${pct(S)}%;background:var(--orange)"></div></div>
-    <div class="pt">🔵 Combustible ${pct(F)}% · 🟠 Mantenimiento y otros ${pct(S)}%</div></div>
+    <div class="bar" style="height:14px;display:flex"><div style="width:${pct(F)}%;background:var(--blue)"></div><div style="width:${pS}%;background:var(--orange)"></div></div>
+    <div class="pt">🔵 Combustible ${pct(F)}% · 🟠 Mantenimiento y otros ${pS}%</div></div>
   <div class="card"><div class="ct">Conclusiones</div>${tips.map(t => `<div class="rtip">${esc(t)}</div>`).join('')}</div>
-  <div class="card"><div class="ct">Evolución mensual</div>${mKeys.length
+  <div class="card"><div class="ct">Evolución mensual (gasto pagado, no consumo)</div>${mKeys.length
     ? `<div class="tw"><table><thead><tr><th>Mes</th><th>Combustible</th><th>Servicios</th><th>Total</th></tr></thead><tbody>${monthRows}</tbody></table></div>`
     : '<div class="empty">Sin movimientos en el período.</div>'}</div>
   <div class="card"><div class="ct">Detalle por vehículo</div><div class="tw"><table><thead><tr><th>Vehículo</th><th>Litros pagados</th><th>Combustible pagado</th><th>Servicios</th><th>Total pagado</th><th>Km medidos</th><th>Comb./km</th><th>L/100 km</th></tr></thead><tbody>${vehRows}</tbody></table></div></div>
-  <div class="card"><div class="ct">Componentes que requieren atención</div>${alerts.length
+  <div class="card"><div class="ct">Componentes que requieren atención (estado actual)</div>${alerts.length
     ? alerts.map(a => `<div class="rtip">${a.st.lvl === 2 ? '🔴' : '🟠'} ${esc(a.v.name)} · ${esc(a.p.name)}: ${a.st.txt}</div>`).join('')
-    : '<div class="empty">✅ Todo en orden.</div>'}</div>`;
+    : (unc.length ? '' : '<div class="empty">✅ Todo en orden.</div>')}${unc.map(u => '<div class="rtip">⚠️ ' + esc(u.v.name) + ' · ' + esc(u.p.name) + ': desgaste sin confirmar</div>').join('')}</div>`;
 }
 
 function render() {
+  if (editFuelId !== null && !(cur() && cur().id === editFuelVeh && cur().fuel.some(x => x.id === editFuelId))) { endEdit(); $('fFuel').reset(); $('fDate').value = today(); }
   if (!cur() && state.vehicles.length) state.currentId = state.vehicles[0].id;
   const v = cur();
   renderSelect(); renderDashboard(v); renderGallery(); renderFuel(v); renderService(v); renderReport();
@@ -526,10 +592,20 @@ function switchView(name) {
   $('vt').textContent = TITLES[name][0];
   $('vs').textContent = TITLES[name][1];
 }
-document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => switchView(n.dataset.view)));
+document.querySelectorAll('.nav-item').forEach(n => {
+  n.setAttribute('role', 'button'); n.tabIndex = 0;
+  n.addEventListener('click', () => switchView(n.dataset.view));
+  n.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchView(n.dataset.view); } });
+});
 $('vsel').addEventListener('change', e => { state.currentId = e.target.value; save(); render(); });
 
 // ---------- Acciones ----------
+let editFuelId = null, editFuelVeh = null;
+function endEdit() {
+  editFuelId = null; editFuelVeh = null;
+  $('fSubmit').textContent = 'Guardar carga';
+  $('fCancel').style.display = 'none';
+}
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]');
   if (!b) return;
@@ -546,23 +622,36 @@ document.addEventListener('click', e => {
   }
   if (act === 'delfuel' && v && confirm('¿Eliminar esta carga?')) {
     v.fuel = v.fuel.filter(x => String(x.id) !== b.dataset.id);
+    syncPrice(v);
     save(); render();
+  }
+  if (act === 'editfuel' && v) {
+    const x = v.fuel.find(y => String(y.id) === b.dataset.id);
+    if (x) {
+      editFuelId = x.id; editFuelVeh = v.id;
+      $('fDate').value = x.date; $('fStation').value = x.station || ''; $('fLit').value = x.liters;
+      $('fPrice').value = x.price; $('fKm').value = x.km; $('fFull').value = x.full === true ? '1' : x.full === false ? '0' : '';
+      $('fSubmit').textContent = 'Guardar cambios'; $('fCancel').style.display = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' }); toast('Editando carga: modificá y guardá');
+    }
   }
   if (act === 'togfull' && v) {
     const x = v.fuel.find(y => String(y.id) === b.dataset.id);
-    if (x) { x.full = x.full === true ? false : true; save(); render(); toast(x.full ? 'Marcada como tanque lleno' : 'Marcada como parcial'); }
+    if (x) { x.full = x.full === null ? true : x.full === true ? false : null; save(); render(); toast(x.full === true ? 'Marcada como tanque lleno' : x.full === false ? 'Marcada como parcial' : 'Marcada como sin confirmar'); }
   }
   if (act === 'adj' && v) {
     const p = v.parts[b.dataset.i];
     const r = prompt('Km recorridos desde el último cambio de "' + p.name + '":', p.current);
-    const n = parseInt(r, 10);
-    if (r !== null && n >= 0) { p.current = n; save(); render(); toast('Desgaste actualizado'); }
+    const n = Number(r);
+    if (r !== null && (r.trim() === '' || !Number.isInteger(n) || n < 0)) return toast('Ingresá un número entero válido', true);
+    if (r !== null) { p.current = n; p.confirmed = true; save(); render(); toast('Desgaste actualizado'); }
   }
   if (act === 'int' && v) {
     const p = v.parts[b.dataset.i];
     const r = prompt('Cambiar "' + p.name + '" cada cuántos km:', p.interval);
-    const n = parseInt(r, 10);
-    if (r !== null && n > 0) { p.interval = n; save(); render(); toast('Intervalo actualizado'); }
+    const n = Number(r);
+    if (r !== null && (r.trim() === '' || !Number.isInteger(n) || n <= 0)) return toast('Ingresá un número entero válido', true);
+    if (r !== null) { p.interval = n; save(); render(); toast('Intervalo actualizado'); }
   }
   if (act === 'delpart' && v) {
     const p = v.parts[b.dataset.i];
@@ -571,24 +660,60 @@ document.addEventListener('click', e => {
     }
   }
   if (act === 'delsvc' && v && confirm('¿Eliminar este registro de gasto?')) {
-    v.services.splice(b.dataset.i, 1); save(); render();
+    const rm = v.services.splice(b.dataset.i, 1)[0];
+    if (rm && rm.interval > 0) recalcPart(v, rm.part);
+    save(); render();
+  }
+  if (act === 'editsvc' && v) {
+    const x = v.services[b.dataset.i]; if (!x) return;
+    const d = prompt('Fecha (AAAA-MM-DD):', x.date); if (d === null) return;
+    const c = prompt('Costo:', x.cost); if (c === null) return;
+    const sh = prompt('Taller:', x.shop || ''); if (sh === null) return;
+    const k = prompt('Km del servicio:', x.km); if (k === null) return;
+    let det = x.part;
+    if (!x.interval) {
+      det = prompt('Detalle del gasto:', x.part); if (det === null) return;
+      det = det.trim().slice(0, 40);
+      if (!det) return toast('El detalle no puede estar vacío', true);
+    }
+    const cost = parseFloat(c), km = Number(k);
+    if (!okDate(d.trim()) || d.trim() > today() || !(fin(cost) && cost >= 0 && cost <= 1e11)) return toast('Fecha o costo inválidos', true);
+    if (k.trim() === '' || !Number.isInteger(km) || km < 0 || km > v.km) return toast('El km debe ser un entero entre 0 y el odómetro actual', true);
+    x.date = d.trim(); x.cost = cost; x.shop = sh.trim().slice(0, 40); x.km = km; x.part = det;
+    if (x.interval > 0) recalcPart(v, x.part);
+    save(); render(); toast('Servicio actualizado');
+  }
+  if (act === 'editveh') {
+    e.stopPropagation();
+    const t = state.vehicles.find(x => x.id === b.dataset.id); if (!t) return;
+    const name = prompt('Marca y modelo:', t.name); if (name === null) return;
+    const plate = prompt('Patente / chapa:', t.plate); if (plate === null) return;
+    const cons = prompt('Consumo declarado (L cada 100 km):', (100 / t.perf).toFixed(1)); if (cons === null) return;
+    const P = plate.trim().toUpperCase().slice(0, 12), c = parseFloat(cons);
+    if (!name.trim() || !P || !(fin(c) && c >= 1 && c <= 100)) return toast('Datos inválidos (consumo entre 1 y 100)', true);
+    if (state.vehicles.some(x => x !== t && x.plate === P)) return toast('Ya existe un vehículo con esa patente', true);
+    t.name = name.trim().slice(0, 40); t.plate = P; t.perf = 100 / c;
+    save(); render(); toast('Vehículo actualizado');
   }
 });
 
 $('fVeh').addEventListener('submit', e => {
   e.preventDefault();
-  const plate = $('vPlate').value.trim().toUpperCase();
-  const name = $('vName').value.trim(), consumption = Number($('vPerf').value), kmInitial = Number($('vKm').value);
-  if (!name || !plate || !Number.isFinite(consumption) || consumption <= 0 || !Number.isFinite(kmInitial) || kmInitial < 0) return toast('Revisá nombre, patente, consumo y kilometraje', true);
+  const plate = $('vPlate').value.trim().toUpperCase().slice(0, 12);
+  if (!$('vName').value.trim() || !plate) return toast('Nombre y patente son obligatorios', true);
   if (state.vehicles.some(v => v.plate === plate)) return toast('Ya existe un vehículo con esa patente', true);
+  const cons = parseFloat($('vPerf').value);
+  if (!(fin(cons) && cons >= 1 && cons <= 100)) return toast('Consumo inválido (entre 1 y 100 L/100 km)', true);
+  const km0 = parseInt($('vKm').value, 10);
+  if (!(fin(km0) && km0 >= 0 && km0 <= 5e6)) return toast('Kilometraje inválido (máx. 5.000.000)', true);
   const v = {
-    id: 'v_' + Date.now(), name, plate, type: $('vType').value,
-    perf: 100 / consumption, price: 0, km: Math.floor(kmInitial),
-    parts: ($('vKind').value === 'Moto' ? PARTS_MOTO : PARTS).map(p => ({ ...p, current: 0 })), fuel: [], services: []
+    id: 'v_' + uid(), name: $('vName').value.trim(), plate, kind: $('vKind').value, type: $('vType').value,
+    perf: 100 / cons, price: 0, km: parseInt($('vKm').value, 10),
+    parts: ($('vKind').value === 'Moto' ? PARTS_MOTO : PARTS).map(p => ({ ...p, current: 0, confirmed: false })), fuel: [], services: []
   };
   state.vehicles.push(v); state.currentId = v.id;
-  save(); render(); e.target.reset();
-  toast('Vehículo agregado. Ajustá el desgaste en Servicio.');
+  save(); render(); e.target.reset(); switchView('maintenance');
+  toast('Vehículo agregado. Ajustá el desgaste de cada componente.');
 });
 
 $('fOdo').addEventListener('submit', e => {
@@ -596,45 +721,53 @@ $('fOdo').addEventListener('submit', e => {
   const v = cur(); if (!v) return toast('Primero agregá un vehículo', true);
   const km = parseInt($('odoKm').value, 10);
   if (km < v.km) return toast('El km no puede ser menor al actual (' + num(v.km) + ')', true);
+  if (!(km <= 5e6)) return toast('Kilometraje fuera de rango (máx. 5.000.000)', true);
   addKm(v, km - v.km); save(); render(); toast('Odómetro actualizado');
 });
 
 $('fFuel').addEventListener('submit', e => {
   e.preventDefault();
   const v = cur(); if (!v) return toast('Primero agregá un vehículo', true);
+  if (editFuelId !== null && editFuelVeh !== v.id) { endEdit(); return toast('Edición cancelada: cambió el vehículo', true); }
   const km = parseInt($('fKm').value, 10), date = $('fDate').value;
   const liters = parseFloat($('fLit').value), price = parseFloat($('fPrice').value);
-  if (!(liters > 0) || !(price > 0) || !(km >= 0)) return toast('Revisá litros, precio y km', true);
-  if (!date || date > today()) return toast('La fecha no puede ser futura', true);
-  const before = v.fuel.filter(x => x.date <= date), after = v.fuel.filter(x => x.date > date);
+  if (!(fin(liters) && liters > 0 && liters <= 2000) || !(fin(price) && price > 0 && price <= 1e7) || !(fin(km) && km >= 0 && km <= 5e6)) return toast('Revisá litros, precio y km', true);
+  if (!okDate(date) || date > today()) return toast('Fecha inválida o futura', true);
+  const others = v.fuel.filter(x => x.id !== editFuelId);
+  const before = others.filter(x => x.date <= date), after = others.filter(x => x.date > date);
   if (before.some(x => x.km > km)) return toast('El km es menor al de una carga anterior', true);
   if (after.some(x => x.km < km)) return toast('El km es mayor al de una carga posterior', true);
-  if (v.fuel.some(x => x.date === date && x.km === km && x.liters === liters)) return toast('Esa carga ya está registrada', true);
-  if (km < v.km && !confirm('Es una carga histórica (el odómetro actual es ' + num(v.km) + ' km). ¿Registrarla?')) return;
+  if (others.some(x => x.date === date && x.km === km && x.liters === liters) && !confirm('Ya hay una carga con la misma fecha, km y litros. ¿Registrarla igual?')) return;
+  if (km < v.km && !editFuelId && !confirm('Es una carga histórica (el odómetro actual es ' + num(v.km) + ' km). ¿Registrarla?')) return;
   if (km - v.km > 5000 && !confirm('El km sube ' + num(km - v.km) + ' km respecto al odómetro actual. ¿Es correcto?')) return;
-  if (km > v.km) addKm(v, km - v.km);
-  v.fuel.push({
-    id: Date.now(), date, station: $('fStation').value.trim(),
-    liters, price, km, full: $('fFull').value === '1'
-  });
-  if (!after.length) v.price = price;
-  save(); render(); e.target.reset(); $('fDate').value = today(); toast('Carga registrada');
+  if (editFuelId && km > v.km) return toast('El km supera el odómetro actual: actualizá primero el odómetro', true);
+  const delta = !editFuelId && km > v.km ? km - v.km : 0;
+  if (delta) addKm(v, delta);
+  const wasEdit = !!editFuelId;
+  const rec = { id: editFuelId || uid(), date, station: $('fStation').value.trim(), liters, price, km, full: $('fFull').value === '1' ? true : $('fFull').value === '0' ? false : null };
+  const idx = v.fuel.findIndex(x => x.id === editFuelId);
+  if (idx >= 0) v.fuel[idx] = rec; else v.fuel.push(rec);
+  syncPrice(v);
+  save(); render(); e.target.reset(); $('fDate').value = today(); endEdit(); toast(wasEdit ? 'Carga actualizada' : 'Carga registrada' + (delta ? ' · odómetro +' + num(delta) + ' km' : ''));
 });
 
 $('fSvc').addEventListener('submit', e => {
   e.preventDefault();
   const v = cur(); if (!v) return toast('Primero agregá un vehículo', true);
   const sel = $('sPart').value, note = $('sNote').value.trim();
-  const p = sel === 'other' ? null : v.parts[Number(sel)];
-  const date = $('sDate').value, cost = Number($('sCost').value);
+  const p = sel === 'other' ? null : v.parts[sel];
   if (!p && !note) return toast('Escribí el detalle del gasto', true);
-  if (!date || date > today()) return toast('La fecha no puede estar vacía ni ser futura', true);
-  if (!Number.isFinite(cost) || cost < 0) return toast('El costo debe ser cero o mayor', true);
+  const date = $('sDate').value, kmIn = parseInt($('sKm').value, 10);
+  const skm = Number.isFinite(kmIn) ? kmIn : v.km;
+  const cost = parseFloat($('sCost').value) || 0;
+  if (!fin(cost) || cost < 0 || cost > 1e11) return toast('Costo inválido', true);
+  if (!date || date > today()) return toast('La fecha del servicio no puede ser futura', true);
+  if (skm < 0 || skm > v.km) return toast('El km del servicio no puede superar el odómetro actual', true);
   v.services.push({
-    date, part: p ? p.name : note, km: v.km, shop: $('sShop').value.trim(),
+    date, part: p ? p.name : note, km: skm, shop: $('sShop').value.trim(),
     cost, interval: p ? p.interval : 0
   });
-  if (p) p.current = 0;
+  if (p) recalcPart(v, p.name);
   save(); render(); e.target.reset(); $('sDate').value = today(); $('sCost').value = 0;
   toast(p ? p.name + ' reiniciado' : 'Gasto registrado');
 });
@@ -644,47 +777,63 @@ $('fPart').addEventListener('submit', e => {
   const v = cur(); if (!v) return toast('Primero agregá un vehículo', true);
   const name = $('pName').value.trim();
   const interval = parseInt($('pInt').value, 10);
-  const used = Number($('pUsed').value);
-  if (!name || !Number.isFinite(interval) || interval <= 0 || !Number.isFinite(used) || used < 0) return toast('Revisá nombre, intervalo y km usados', true);
+  const usedRaw = parseInt($('pUsed').value, 10), used = fin(usedRaw) && usedRaw >= 0 ? usedRaw : 0;
+  if (!name) return toast('El nombre es obligatorio', true);
+  if (!(fin(interval) && interval > 0 && interval <= 1e6)) return toast('El intervalo debe estar entre 1 y 1.000.000 km', true);
+  if (fin(usedRaw) && (usedRaw < 0 || usedRaw > 1e7)) return toast('Km desde el último cambio inválido', true);
   if (v.parts.some(p => p.name.toLowerCase() === name.toLowerCase())) return toast('Ya existe ese componente', true);
   const colors = ['#8b5cf6', '#06b6d4', '#d946ef', '#84cc16', '#f97316'];
-  v.parts.push({ name, icon: '🔧', interval, current: used, color: colors[v.parts.length % colors.length] });
+  v.parts.push({ name, icon: '🔧', interval, current: used, color: colors[v.parts.length % colors.length], confirmed: fin(usedRaw) && usedRaw >= 0 });
   save(); render(); e.target.reset(); toast('Componente agregado');
 });
 
-$('btnBackup').addEventListener('click', () => {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(state)], { type: 'application/json' }));
+function downloadBackup(prefix) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify({ app: 'FleetControl', version: 5, ...state })], { type: 'application/json' }));
   const a = document.createElement('a');
-  a.href = url; a.download = 'fleetcontrol_respaldo_' + today() + '.json';
+  a.href = url; a.download = prefix + '_' + today() + '.json';
   document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-  toast('Respaldo descargado');
-});
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+$('btnBackup').addEventListener('click', () => { downloadBackup('fleetcontrol_respaldo'); toast('Respaldo generado'); });
 $('btnRestore').addEventListener('click', () => $('fileRestore').click());
 $('fileRestore').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;
+  if (f.size > 5e6) { toast('El archivo es demasiado grande (máx. 5 MB)', true); e.target.value = ''; return; }
   const r = new FileReader();
   r.onload = () => {
     try {
       const s = JSON.parse(r.result);
-      if (!s || !Array.isArray(s.vehicles)) throw new Error('formato');
-      if (!confirm('Esto reemplaza todos los datos actuales. ¿Continuar?')) return;
-      state = clean(s);
+      if (!s || !Array.isArray(s.vehicles) || (s.app && s.app !== 'FleetControl')) throw new Error('formato');
+      if (s.version > 5) { toast('Ese respaldo es de una versión más nueva de la app', true); return; }
+      const raw = s.vehicles.length;
+      const nv = clean(s);
+      delete nv.app; delete nv.version;
+      if (!nv.vehicles.length && raw) throw new Error('vacío');
+      const nf = nv.vehicles.reduce((t, x) => t + x.fuel.length, 0);
+      if (!confirm('Esto reemplaza TODOS los datos actuales por el respaldo: ' + nv.vehicles.length + ' vehículo(s) y ' + nf + ' carga(s).' + (clean.dropped ? ' Se descartan ' + clean.dropped + ' registro(s) inválido(s).' : '') + ' Antes se descargará una copia de tus datos actuales. ¿Continuar?')) return;
+      if (state.vehicles.length) downloadBackup('fleetcontrol_antes_de_restaurar');
+      const old = state;
+      state = nv;
       if (!state.vehicles.some(v => v.id === state.currentId)) state.currentId = state.vehicles[0] ? state.vehicles[0].id : null;
-      if (!save()) return;
+      if (!save()) { state = old; render(); toast('No se pudo guardar el respaldo: se mantienen tus datos actuales', true); return; }
       render(); toast('Respaldo restaurado');
     } catch (err) { toast('Archivo de respaldo inválido', true); }
   };
+  r.onerror = () => toast('No se pudo leer el archivo', true);
   r.readAsText(f);
   e.target.value = '';
 });
 
+$('fCancel').addEventListener('click', () => { endEdit(); $('fFuel').reset(); $('fDate').value = today(); });
+$('vsel').addEventListener('change', endEdit);
 $('rScope').addEventListener('change', renderReport);
 $('rPeriod').addEventListener('change', renderReport);
 $('btnPrint').addEventListener('click', () => {
   toast('En el diálogo elegí "Guardar como PDF"');
   setTimeout(() => window.print(), 600);
 });
+
+document.querySelectorAll('label').forEach(l => { const c = l.nextElementSibling; if (c && c.id) l.htmlFor = c.id; });
 
 // ---------- Inicio ----------
 $('fDate').value = today();
