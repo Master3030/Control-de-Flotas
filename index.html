@@ -142,10 +142,12 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
       <form id="fFuel" class="form">
         <div><label>Fecha</label><input type="date" id="fDate" required></div>
         <div><label>Estación</label><input id="fStation" maxlength="40" placeholder="Opcional"></div>
-        <div><label>Litros</label><input type="number" id="fLit" min="0.1" step="0.01" required></div>
-        <div><label>Precio/L</label><input type="number" id="fPrice" min="1" step="any" required></div>
+        <div><label>Precio por litro (Gs.)</label><input type="text" inputmode="decimal" id="fPrice" placeholder="Ej: 7.090" autocomplete="off"></div>
+        <div><label>Monto pagado (Gs.)</label><input type="text" inputmode="decimal" id="fAmt" placeholder="Ej: 20.000" autocomplete="off"></div>
+        <div><label>Litros (se calculan con el monto)</label><input type="text" inputmode="decimal" id="fLit" placeholder="Ej: 2,82" autocomplete="off"></div>
         <div><label>Km al cargar</label><input type="number" id="fKm" min="0" required></div>
         <div><label>¿Tanque lleno?</label><select id="fFull"><option value="1">Sí, llené el tanque</option><option value="0">No, carga parcial</option><option value="">Sin confirmar</option></select></div>
+        <div id="fHint" class="ms" style="grid-column:1/-1;min-height:16px"></div>
         <button class="btn" id="fSubmit" type="submit">Guardar carga</button>
         <button class="btn ghost" id="fCancel" type="button" style="display:none">Cancelar</button>
       </form>
@@ -205,6 +207,14 @@ const fdate = d => d.split('-').reverse().join('/');
 const isoLocal = ms => { const d = new Date(ms), p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
 const today = () => isoLocal(Date.now());
 const fin = n => Number.isFinite(n);
+// Litros: la coma o el punto son decimales (2,82 o 2.82).
+function parseDec(t) { const v = String(t == null ? '' : t).trim().replace(/\s/g, '').replace(',', '.'); return v === '' ? NaN : Number(v); }
+// Guaraníes: "20.000" y "7.090" son miles; "7090,5" es decimal.
+function parseGs(t) {
+  let v = String(t == null ? '' : t).trim().replace(/\s|gs\.?/gi, '');
+  if (/^\d{1,3}([.,]\d{3})+$/.test(v)) v = v.replace(/[.,]/g, ''); else v = v.replace(',', '.');
+  return v === '' ? NaN : Number(v);
+}
 let _seq = 0;
 const uid = () => Date.now() * 1000 + (_seq++ % 1000);
 function okDate(d) {
@@ -409,12 +419,12 @@ function renderDashboard(v) {
   $('m1s').textContent = (v.kind ? v.kind + ' · ' : '') + v.type;
   $('m2').textContent = num(100 / s.perf, 1) + ' L/100 km';
   const unk = v.fuel.filter(x => x.full === null).length;
-  $('m2s').textContent = s.real ? 'REAL: ' + num(s.dist) + ' km con ' + num(s.cL, 1) + ' L (tanque lleno a lleno)'
+  $('m2s').textContent = s.real ? 'REAL: ' + num(s.dist) + ' km con ' + num(s.cL, 2) + ' L (tanque lleno a lleno)'
     : (s.bad ? 'ESTIMADO (declarado): hay cargas con fechas y km contradictorios, revisalas' : 'ESTIMADO (declarado): no hay un intervalo válido de tanque lleno a tanque lleno') + (unk ? ' · ' + unk + ' carga(s) sin tipo, marcalas en Combustible' : '');
   $('m3').textContent = money(s.cost);
-  $('m3s').textContent = num(s.liters, 1) + ' L pagados' + (s.real ? ' · consumido est.: ' + money(s.cC) : '');
+  $('m3s').textContent = num(s.liters, 2) + ' L pagados' + (s.real ? ' · consumido est.: ' + money(s.cC) : '');
   $('m4').textContent = s.cpk > 0 ? money(s.cpk) : '—';
-  $('m4s').textContent = s.real ? 'REAL: ' + money(s.cC) + ' en ' + num(s.dist) + ' km (' + num(s.cL, 1) + ' L)'
+  $('m4s').textContent = s.real ? 'REAL: ' + money(s.cC) + ' en ' + num(s.dist) + ' km (' + num(s.cL, 2) + ' L)'
     : s.src === 'carga' ? 'ESTIMADO: precio de tu última carga × ' + num(100 / v.perf, 1) + ' L/100 km'
     : 'Registrá una carga para estimar el costo por km';
   if (document.activeElement !== $('odoKm')) $('odoKm').value = v.km;
@@ -543,7 +553,7 @@ function renderReport() {
   const who = all ? 'Toda la flota (' + list.length + ' vehículos)' : esc(list[0].name) + ' - ' + esc(list[0].plate);
   const monthRows = mKeys.map(m => `<tr><td>${m.split('-').reverse().join('/')}</td><td>${money(months[m].f)}</td><td>${money(months[m].s)}</td><td><b>${money(months[m].f + months[m].s)}</b></td></tr>`).join('');
   const vehRows = rows.map(r => `<tr><td>${esc(r.v.name)}<br><small>${esc(r.v.plate)}</small></td>
-    <td>${num(r.liters, 1)}</td><td>${money(r.fcost)}</td><td>${money(r.scost)}</td><td><b>${money(r.total)}</b></td>
+    <td>${num(r.liters, 2)}</td><td>${money(r.fcost)}</td><td>${money(r.scost)}</td><td><b>${money(r.total)}</b></td>
     <td>${r.c.real ? num(r.c.dist) : '-'}</td><td>${r.c.real ? money(r.c.C / r.c.dist) : '-'}</td><td>${r.c.real ? num(100 * r.c.L / r.c.dist, 1) : '-'}</td></tr>`).join('');
 
   box.innerHTML = `
@@ -552,9 +562,9 @@ function renderReport() {
     <div class="ms">${per} · Generado el ${fdate(today())}</div></div>
   <div class="metrics">
     <div class="metric"><h3>Gasto total</h3><div class="mv">${money(T)}</div><div class="ms">Pagado en el período</div></div>
-    <div class="metric"><h3>Combustible</h3><div class="mv">${money(F)}</div><div class="ms">${num(L, 1)} L pagados · ${pct(F)}%</div></div>
+    <div class="metric"><h3>Combustible</h3><div class="mv">${money(F)}</div><div class="ms">${num(L, 2)} L pagados · ${pct(F)}%</div></div>
     <div class="metric"><h3>Mantenimiento y otros</h3><div class="mv">${money(S)}</div><div class="ms">${pS}% del gasto</div></div>
-    <div class="metric"><h3>Combustible por km</h3><div class="mv">${D > 0 ? money(CC / D) : '—'}</div><div class="ms">${D > 0 ? 'REAL: ' + num(D) + ' km · ' + num(CL, 1) + ' L (intervalos cerrados en el período)' : 'Sin intervalos de tanque lleno a tanque lleno cerrados en el período'}</div></div>
+    <div class="metric"><h3>Combustible por km</h3><div class="mv">${D > 0 ? money(CC / D) : '—'}</div><div class="ms">${D > 0 ? 'REAL: ' + num(D) + ' km · ' + num(CL, 2) + ' L (intervalos cerrados en el período)' : 'Sin intervalos de tanque lleno a tanque lleno cerrados en el período'}</div></div>
   </div>
   <div class="card"><div class="ct">Distribución del gasto</div>
     <div class="bar" style="height:14px;display:flex"><div style="width:${pct(F)}%;background:var(--blue)"></div><div style="width:${pS}%;background:var(--orange)"></div></div>
@@ -600,8 +610,20 @@ document.querySelectorAll('.nav-item').forEach(n => {
 $('vsel').addEventListener('change', e => { state.currentId = e.target.value; save(); render(); });
 
 // ---------- Acciones ----------
+function fuelSync(src) {
+  const price = parseGs($('fPrice').value), amt = parseGs($('fAmt').value);
+  if (src === 'lit') $('fAmt').value = '';
+  else if (fin(amt) && amt > 0 && fin(price) && price > 0) $('fLit').value = String(+(amt / price).toFixed(4)).replace('.', ',');
+  const lit = parseDec($('fLit').value), a = parseGs($('fAmt').value);
+  let msg = '';
+  if (fin(lit) && lit > 0 && fin(price) && price > 0) msg = 'Se registrarán ' + num(lit, 2) + ' L · total ' + money(fin(a) && a > 0 ? a : lit * price);
+  $('fHint').textContent = msg;
+}
+['fPrice', 'fAmt'].forEach(id => $(id).addEventListener('input', () => fuelSync(id === 'fAmt' ? 'amt' : 'price')));
+$('fLit').addEventListener('input', () => fuelSync('lit'));
 let editFuelId = null, editFuelVeh = null;
 function endEdit() {
+  $('fHint').textContent = '';
   editFuelId = null; editFuelVeh = null;
   $('fSubmit').textContent = 'Guardar carga';
   $('fCancel').style.display = 'none';
@@ -630,7 +652,7 @@ document.addEventListener('click', e => {
     if (x) {
       editFuelId = x.id; editFuelVeh = v.id;
       $('fDate').value = x.date; $('fStation').value = x.station || ''; $('fLit').value = x.liters;
-      $('fPrice').value = x.price; $('fKm').value = x.km; $('fFull').value = x.full === true ? '1' : x.full === false ? '0' : '';
+      $('fPrice').value = x.price; $('fAmt').value = ''; $('fKm').value = x.km; $('fFull').value = x.full === true ? '1' : x.full === false ? '0' : '';
       $('fSubmit').textContent = 'Guardar cambios'; $('fCancel').style.display = '';
       window.scrollTo({ top: 0, behavior: 'smooth' }); toast('Editando carga: modificá y guardá');
     }
@@ -730,7 +752,7 @@ $('fFuel').addEventListener('submit', e => {
   const v = cur(); if (!v) return toast('Primero agregá un vehículo', true);
   if (editFuelId !== null && editFuelVeh !== v.id) { endEdit(); return toast('Edición cancelada: cambió el vehículo', true); }
   const km = parseInt($('fKm').value, 10), date = $('fDate').value;
-  const liters = parseFloat($('fLit').value), price = parseFloat($('fPrice').value);
+  const liters = parseDec($('fLit').value), price = parseGs($('fPrice').value);
   if (!(fin(liters) && liters > 0 && liters <= 2000) || !(fin(price) && price > 0 && price <= 1e7) || !(fin(km) && km >= 0 && km <= 5e6)) return toast('Revisá litros, precio y km', true);
   if (!okDate(date) || date > today()) return toast('Fecha inválida o futura', true);
   const others = v.fuel.filter(x => x.id !== editFuelId);
