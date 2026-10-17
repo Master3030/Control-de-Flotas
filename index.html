@@ -1,134 +1,288 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
+<head><style>
+@font-face {
+  font-family: "Optimistic";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Optimistic Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
+}
+:where(html) {
+  font-family: "Optimistic", system-ui, sans-serif;
+}
+:where(code, pre, kbd, samp) {
+  font-family: "Optimistic Mono", ui-monospace, monospace;
+}
+</style>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FleetControl Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>FleetControl Pro — Rediseño UX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <style>
-:root{--bg:#0a0f1e;--side:#111827;--card:#1a2236;--input:#0f172a;--bd:rgba(148,163,184,.15);--tx:#f1f5f9;--mut:#64748b;--dim:#94a3b8;--blue:#3b82f6;--green:#10b981;--orange:#f59e0b;--red:#ef4444}
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
-body{background:var(--bg);color:var(--tx);min-height:100vh}
-.sidebar{width:240px;background:var(--side);padding:22px 14px;position:fixed;top:0;bottom:0;border-right:1px solid var(--bd);z-index:10}
-.logo{font-size:19px;font-weight:800;padding:0 10px 20px;border-bottom:1px solid var(--bd);margin-bottom:18px}
-.logo small{display:block;font-size:11px;color:var(--mut);font-weight:500}
-.nav{display:flex;flex-direction:column;gap:5px}
-.nav-item{padding:12px 14px;border-radius:10px;color:var(--dim);font-weight:600;font-size:14px;cursor:pointer;border:1px solid transparent}
-.nav-item.active{background:rgba(59,130,246,.12);color:var(--blue);border-color:rgba(59,130,246,.25)}
-.main{margin-left:240px;padding:26px;max-width:1200px}
-.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:22px}
-.top h2{font-size:22px}.top p{color:var(--mut);font-size:13px;margin-top:3px}
-.actions{display:flex;gap:10px;flex-wrap:wrap}
-select,input{background:var(--input);border:1px solid var(--bd);color:var(--tx);padding:10px;border-radius:8px;font-size:14px;width:100%;outline:none}
-select:focus,input:focus{border-color:var(--blue)}
-.actions select{width:auto;min-width:220px}
-.btn{background:var(--blue);color:#fff;border:0;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px}
-.btn.green{background:var(--green)}.btn.ghost{background:transparent;border:1px solid var(--bd);color:var(--dim)}.btn.red{background:rgba(239,68,68,.15);color:var(--red)}
-.btn.sm{padding:6px 10px;font-size:11px}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;margin-bottom:20px}
-.ct{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:14px}
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px}
-.metric{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;border-top:3px solid var(--blue)}
-.metric:nth-child(2){border-top-color:var(--green)}.metric:nth-child(3){border-top-color:var(--orange)}.metric:nth-child(4){border-top-color:#8b5cf6}
-.metric h3{font-size:11px;color:var(--mut);text-transform:uppercase;margin-bottom:8px}
-.mv{font-size:22px;font-weight:800}.ms{font-size:12px;color:var(--mut);margin-top:4px}
-.grid2{display:grid;grid-template-columns:2fr 1fr;gap:20px}
-.part{display:flex;gap:12px;align-items:center;background:rgba(15,23,42,.6);padding:12px;border-radius:12px;margin-bottom:10px;border:1px solid transparent}
-.part.warning{border-color:rgba(245,158,11,.4)}.part.danger{border-color:rgba(239,68,68,.5)}
-.pi{font-size:22px}.pb{flex:1;min-width:0}.pb h4{font-size:14px;margin-bottom:6px}
-.bar{height:6px;background:#334155;border-radius:4px;overflow:hidden}.fill{height:100%;border-radius:4px}
-.pt{font-size:11px;color:var(--mut);margin-top:5px}
-.alert{padding:9px 0;border-bottom:1px solid var(--bd);font-size:13px}.alert:last-child{border:0}.alert span{display:block;font-size:12px;color:var(--mut)}
-.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end}
-label{display:block;font-size:11px;color:var(--mut);margin-bottom:4px;text-transform:uppercase}
-.tw{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
-th{text-align:left;padding:10px;color:var(--mut);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--bd)}
-td{padding:11px 10px;border-bottom:1px solid var(--bd);color:var(--dim)}
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
-.vc{background:rgba(15,23,42,.6);border:1px solid var(--bd);border-radius:12px;padding:16px;cursor:pointer}
-.vc.sel{border-color:var(--blue)}.vc h4{font-size:15px}.vc small{color:var(--mut)}
-.vc .row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:var(--dim)}
-.pill{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
-.ok{background:rgba(16,185,129,.12);color:var(--green)}.warn{background:rgba(245,158,11,.12);color:var(--orange)}.crit{background:rgba(239,68,68,.12);color:var(--red)}
-.empty{text-align:center;color:var(--mut);padding:28px;font-size:14px}
-.view{display:none}.view.active{display:block}
-#toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s;z-index:99}
-#toast.show{opacity:1}#toast.err{background:var(--red)}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{
+  --chart-grid:rgba(148,163,184,.1);
+}
+[data-theme="light"]{
+  --bg:#f6f8fc; --bg-2:#eef2f9; --side:#ffffff; --side-2:#f8faff;
+  --card:#ffffff; --card-2:#fcfdff; --card-hover:#f1f5ff;
+  --input:#ffffff; --input-focus:#ffffff;
+  --bd:rgba(15,23,42,.08); --bd-strong:rgba(15,23,42,.14);
+  --tx:#0f172a; --tx-2:#334155; --mut:#64748b; --dim:#475569;
+  --blue:#2563eb; --blue-2:#3b82f6; --blue-glow:rgba(59,130,246,.18);
+  --chart-grid:rgba(15,23,42,.08);
+  --shadow:0 16px 40px rgba(15,23,42,.08),0 4px 12px rgba(15,23,42,.06);
+  --shadow-sm:0 4px 16px rgba(15,23,42,.06);
+}
+:root{
+  --bg:#070c19; --bg-2:#0a1124; --side:#0d162b; --side-2:#0f1d36;
+  --card:#111e38; --card-2:#132240; --card-hover:#16294a;
+  --input:#0a1428; --input-focus:#0e1c36;
+  --bd:rgba(148,163,184,.14); --bd-strong:rgba(148,163,184,.24);
+  --tx:#f1f6ff; --tx-2:#c6d3e7; --mut:#7d90b1; --dim:#a9bbd6;
+  --blue:#5ea2ff; --blue-2:#3b82f6; --blue-glow:rgba(94,162,255,.22);
+  --green:#34d399; --green-bg:rgba(52,211,153,.12);
+  --orange:#fbbf24; --orange-bg:rgba(251,191,36,.12);
+  --red:#fb7185; --red-bg:rgba(251,113,133,.12);
+  --purple:#a78bfa;
+  --radius:18px; --radius-sm:12px; --radius-xs:10px;
+  --shadow:0 16px 40px rgba(0,0,0,.24),0 4px 12px rgba(0,0,0,.18);
+  --shadow-sm:0 8px 20px rgba(0,0,0,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: radial-gradient(1200px 600px at 80% -10%, rgba(59,130,246,.18), transparent 60%), radial-gradient(900px 500px at -10% 20%, rgba(16,185,129,.08), transparent 50%), var(--bg); color:var(--tx); min-height:100vh; line-height:1.5; -webkit-font-smoothing:antialiased;}
+button,input,select{font-family:inherit}
+
+/* Sidebar */
+.sidebar{width:280px; background: linear-gradient(180deg, var(--side) 0%, #0a1326 100%); border-right:1px solid var(--bd); position:fixed; top:0; bottom:0; left:0; z-index:20; display:flex; flex-direction:column; padding:28px 16px 16px;}
+.brand{display:flex; align-items:center; gap:12px; padding:0 8px 24px; border-bottom:1px solid var(--bd); margin-bottom:20px;}
+.brand-icon{width:40px; height:40px; border-radius:12px; background: linear-gradient(135deg, var(--blue-2), #7c3aed); display:grid; place-items:center; font-weight:800; font-size:18px; color:white; box-shadow:0 8px 20px rgba(59,130,246,.3);}
+.brand-text{line-height:1.1}
+.brand-text b{display:block; font-size:16px; font-weight:800; letter-spacing:-.03em;}
+.brand-text span{font-size:11px; color:var(--mut); font-weight:600; letter-spacing:.08em; text-transform:uppercase;}
+.nav{display:flex; flex-direction:column; gap:6px; flex:1;}
+.nav-item{display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:12px; color:var(--mut); font-weight:600; font-size:13.5px; cursor:pointer; border:1px solid transparent; transition: all .2s cubic-bezier(.2,.8,.2,1); position:relative; user-select:none;}
+.nav-item .ico{width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background: rgba(148,163,184,.08); font-size:14px; transition: all .2s;}
+.nav-item:hover{background: rgba(148,163,184,.07); color:var(--tx-2); transform: translateX(2px);}
+.nav-item:hover .ico{background: rgba(148,163,184,.14);}
+.nav-item.active{background: linear-gradient(100deg, rgba(59,130,246,.18), rgba(59,130,246,.06)); color:#8cc5ff; border-color: rgba(94,162,255,.22); box-shadow: inset 0 1px 0 rgba(255,255,255,.06);}
+.nav-item.active .ico{background: rgba(94,162,255,.22); color:white; box-shadow:0 0 0 2px rgba(94,162,255,.15);}
+.nav-item.active::before{content:""; position:absolute; left:-16px; top:50%; transform:translateY(-50%); width:3px; height:22px; background:var(--blue); border-radius:0 4px 4px 0; box-shadow:0 0 12px var(--blue);}
+.sidebar-foot{padding:14px 10px; border-top:1px solid var(--bd); margin-top:auto;}
+.sidebar-foot .hint{font-size:11px; color:var(--mut); line-height:1.5;}
+
+/* Main */
+.main{margin-left:280px; min-height:100vh; padding:0;}
+.topbar{position:sticky; top:0; z-index:10; backdrop-filter: blur(18px) saturate(1.2); background: linear-gradient(180deg, rgba(7,12,25,.92), rgba(7,12,25,.72)); border-bottom:1px solid var(--bd); padding:18px 32px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+.top-left h1{font-size:clamp(22px, 2.2vw, 28px); font-weight:800; letter-spacing:-.04em; line-height:1.1;}
+.top-left p{font-size:13px; color:var(--mut); margin-top:4px;}
+.top-actions{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+.select-wrap{position:relative;}
+.select-wrap select{appearance:none; min-width:260px; height:44px; padding:0 42px 0 14px; background: var(--input); border:1px solid var(--bd); border-radius:12px; color:var(--tx-2); font-size:13px; font-weight:500; cursor:pointer; transition: all .2s;}
+.select-wrap::after{content:"▾"; position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--mut); pointer-events:none;}
+.select-wrap select:focus{border-color: var(--blue); box-shadow:0 0 0 4px var(--blue-glow); background: var(--input-focus); outline:none;}
+
+.content{padding:28px 32px 40px; max-width:1400px; margin:0 auto;}
+
+.card{background: linear-gradient(165deg, var(--card) 0%, var(--card-2) 100%); border:1px solid var(--bd); border-radius:var(--radius); padding:22px; margin-bottom:20px; box-shadow: var(--shadow-sm); position:relative; overflow:hidden; transition: border-color .2s, transform .2s;}
+.card::before{content:""; position:absolute; inset:0 0 auto 0; height:1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent); pointer-events:none;}
+.card:hover{border-color: var(--bd-strong);}
+.card-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;}
+.card-title{display:flex; align-items:center; gap:10px; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--tx-2);}
+.card-title .dot{width:8px; height:8px; border-radius:50%; background:var(--blue); box-shadow:0 0 12px var(--blue-glow);}
+.card-title.orange .dot{background:var(--orange)} .card-title.green .dot{background:var(--green)} .card-title.red .dot{background:var(--red)} .card-title.purple .dot{background:var(--purple)}
+
+.metrics{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:14px; margin-bottom:22px;}
+.metric{background: linear-gradient(165deg, var(--card) 0%, #101d35 100%); border:1px solid var(--bd); border-radius:16px; padding:18px 18px 16px; position:relative; overflow:hidden; transition: all .22s cubic-bezier(.2,.8,.2,1);}
+.metric::after{content:""; position:absolute; width:120px; height:120px; right:-36px; top:-44px; border-radius:50%; background: radial-gradient(circle, var(--glow, rgba(94,162,255,.14)), transparent 70%); pointer-events:none;}
+.metric:hover{transform: translateY(-3px); border-color: rgba(148,163,184,.22); box-shadow: var(--shadow);}
+.metric-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+.metric-icon{width:36px; height:36px; border-radius:10px; display:grid; place-items:center; font-size:16px;}
+.metric h3{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); font-weight:700;}
+.mv{font-size:clamp(20px,1.9vw,26px); font-weight:800; letter-spacing:-.04em; line-height:1.2; color:var(--tx);}
+.ms{font-size:12px; color:var(--mut); margin-top:6px; line-height:1.4;}
+.metric.b1{--glow:rgba(94,162,255,.18); border-top:2px solid var(--blue)} .metric.b1 .metric-icon{background:rgba(94,162,255,.14); color:var(--blue)}
+.metric.b2{--glow:rgba(52,211,153,.14); border-top:2px solid var(--green)} .metric.b2 .metric-icon{background:var(--green-bg); color:var(--green)}
+.metric.b3{--glow:rgba(251,191,36,.14); border-top:2px solid var(--orange)} .metric.b3 .metric-icon{background:var(--orange-bg); color:var(--orange)}
+.metric.b4{--glow:rgba(167,139,250,.14); border-top:2px solid var(--purple)} .metric.b4 .metric-icon{background:rgba(167,139,250,.14); color:var(--purple)}
+
+.grid2{display:grid; grid-template-columns: 1.7fr .9fr; gap:18px;}
+@media(max-width:1100px){.grid2{grid-template-columns:1fr}}
+
+.part{display:flex; gap:12px; align-items:center; padding:14px; border-radius:12px; background: rgba(6,15,29,.5); border:1px solid rgba(148,163,184,.08); margin-bottom:10px; transition: all .15s;}
+.part:hover{background: rgba(10,20,40,.7); border-color: rgba(148,163,184,.14);}
+.part.warning{border-color: rgba(251,191,36,.28); background: rgba(251,191,36,.06)} .part.danger{border-color: rgba(251,113,133,.28); background: rgba(251,113,133,.06)}
+.pi{font-size:22px; width:36px; height:36px; display:grid; place-items:center; background: rgba(148,163,184,.08); border-radius:10px;}
+.pb{flex:1; min-width:0} .pb h4{font-size:13.5px; font-weight:600; margin-bottom:6px;}
+.bar{height:8px; background:#1e2d4a; border-radius:999px; overflow:hidden;} .fill{height:100%; border-radius:999px; background: linear-gradient(90deg, var(--blue-2), var(--blue)); box-shadow:0 0 10px rgba(94,162,255,.25);}
+.pt{font-size:11px; color:var(--mut); margin-top:6px;}
+
+.alert{padding:14px 0; border-bottom:1px solid var(--bd); font-size:13px; display:flex; gap:12px; align-items:flex-start;}
+.alert:last-child{border:0} .alert span{display:block; font-size:12px; color:var(--mut); margin-top:3px; line-height:1.4;}
+.alert::before{content:"🔔"; width:28px; height:28px; background: rgba(148,163,184,.08); border-radius:8px; display:grid; place-items:center; font-size:12px; flex-shrink:0;}
+
+.form{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:16px; align-items:end;}
+label{display:block; font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#8ea1be; margin-bottom:8px;}
+input, select{width:100%; height:44px; background: var(--input); border:1px solid var(--bd); border-radius:12px; padding:0 14px; color:var(--tx-2); font-size:13.5px; outline:none; transition: all .2s;}
+input:hover, select:hover{border-color: var(--bd-strong);}
+input:focus, select:focus{border-color: var(--blue); background: var(--input-focus); box-shadow:0 0 0 4px var(--blue-glow);}
+input::placeholder{color:var(--mut);}
+
+.btn{height:44px; padding:0 18px; border-radius:12px; border:0; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; transition: all .18s cubic-bezier(.2,.8,.2,1); white-space:nowrap;}
+.btn.primary{background: linear-gradient(135deg, #4a8cff, #2563eb); color:white; box-shadow:0 8px 18px rgba(37,99,235,.22);}
+.btn.primary:hover{filter:brightness(1.08); transform: translateY(-1px); box-shadow:0 12px 24px rgba(37,99,235,.28);}
+.btn.green{background: linear-gradient(135deg, #34d399, #059669); color:white; box-shadow:0 8px 18px rgba(16,185,129,.18);}
+.btn.ghost{background: rgba(148,163,184,.08); border:1px solid var(--bd); color:var(--tx-2); box-shadow:none;}
+.btn.ghost:hover{background: rgba(148,163,184,.12); border-color: var(--bd-strong);}
+.btn.red{background: var(--red-bg); color:var(--red); border:1px solid rgba(251,113,133,.18);}
+.btn.sm{height:32px; padding:0 12px; font-size:12px; border-radius:9px;}
+.btn:active{transform: translateY(0) scale(.98);}
+
+.tw{border:1px solid var(--bd); border-radius:14px; overflow:hidden; background: rgba(6,15,29,.4);}
+table{width:100%; border-collapse:collapse; font-size:12.5px; min-width:620px;}
+th{text-align:left; padding:14px 14px; color:#8ea1be; font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; background: rgba(5,13,26,.6); border-bottom:1px solid var(--bd); white-space:nowrap; position:sticky; top:0;}
+td{padding:13px 14px; border-bottom:1px solid var(--bd); color:var(--dim);} tbody tr:last-child td{border-bottom:0} tbody tr{transition: background .15s;} tbody tr:hover{background: rgba(94,162,255,.05);}
+
+.gallery{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:14px;}
+.vc{background: linear-gradient(165deg, var(--card) 0%, #0f1d36 100%); border:1px solid var(--bd); border-radius:16px; padding:18px; cursor:pointer; transition: all .22s cubic-bezier(.2,.8,.2,1); position:relative; overflow:hidden;}
+.vc:hover{transform: translateY(-3px); border-color: rgba(94,162,255,.3); box-shadow: var(--shadow);}
+.vc.sel{border-color: rgba(94,162,255,.6); box-shadow:0 0 0 3px rgba(94,162,255,.14), var(--shadow);}
+.vc h4{font-size:15px; font-weight:700; letter-spacing:-.02em;} .vc small{color:var(--mut); font-size:12px;} .vc .row{display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:12px; color:var(--dim);}
+
+.pill{padding:5px 10px; border-radius:999px; font-size:11px; font-weight:700; border:1px solid transparent; display:inline-flex; align-items:center; gap:4px;}
+.ok{background:var(--green-bg); color:#6ee7b7; border-color: rgba(52,211,153,.16)} .warn{background:var(--orange-bg); color:#fcd34d; border-color: rgba(251,191,36,.16)} .crit{background:var(--red-bg); color:#fda4af; border-color: rgba(251,113,133,.16)}
+
+.empty{text-align:center; padding:40px 20px; color:var(--mut);} .empty .big{font-size:40px; margin-bottom:12px; opacity:.8;} .empty p{font-size:13px; max-width:360px; margin:8px auto 0; line-height:1.5;}
+
+.view{display:none; animation: fadeIn .28s cubic-bezier(.2,.8,.2,1);} .view.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform: translateY(8px);} to{opacity:1; transform: translateY(0);}}
+
+#toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(12px); background:#0f1f3a; border:1px solid rgba(255,255,255,.12); color:white; padding:12px 18px; border-radius:12px; font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition: all .32s cubic-bezier(.2,.8,.2,1); z-index:99; box-shadow: var(--shadow); max-width:calc(100vw - 24px); text-align:center;}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);} #toast.err{background:#3a1220; border-color: rgba(251,113,133,.25); color:#fecdd3;}
+
+.rtip{padding:12px 0; border-bottom:1px solid var(--bd); font-size:13px; color:var(--dim); line-height:1.5;} .rtip:last-child{border:0}
+
 @media(max-width:900px){
-.sidebar{width:100%;top:auto;bottom:0;height:auto;padding:6px;border-right:0;border-top:1px solid var(--bd)}
-.logo{display:none}.nav{flex-direction:row}.nav-item{flex:1;text-align:center;padding:10px 2px;font-size:12px}
-.main{margin-left:0;padding:16px 14px 90px}.grid2{grid-template-columns:1fr}.actions,.actions select{width:100%}}
-button:focus-visible,.nav-item:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-.rtip{padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px;color:var(--dim)}.rtip:last-child{border:0}
-@media print{.sidebar,.top .actions,.no-print,#toast{display:none!important}
-body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
-.card,.metric{background:#fff!important;border:1px solid #ccc;color:#000;break-inside:avoid}
-.mv,td,th,.ms,.ct,h2,p,.rtip,.pt{color:#000!important}}
+  .sidebar{width:100%; top:auto; bottom:0; height:auto; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); flex-direction:row; border-right:0; border-top:1px solid var(--bd); backdrop-filter: blur(18px); background: rgba(13,22,43,.92);}
+  .brand, .sidebar-foot{display:none} .nav{flex-direction:row; gap:4px;} .nav-item{flex:1; flex-direction:column; gap:4px; padding:8px 4px; font-size:10px; border-radius:10px;} .nav-item .ico{width:24px; height:24px; font-size:12px;} .nav-item.active::before{display:none} .nav-item.active{box-shadow: none;}
+  .main{margin-left:0; padding-bottom:88px;} .topbar{padding:16px 16px;} .content{padding:16px 14px 24px;} .select-wrap select{min-width:100%; width:100%;} .top-actions{width:100%;} .top-actions .select-wrap{flex:1;}
+}
+@media print{.sidebar, .topbar .no-print, #toast{display:none!important} body{background:white; color:black} .main{margin:0} .card,.metric{background:white!important; border:1px solid #ddd!important; color:black; box-shadow:none!important}}
+
+/* Theme toggle */
+.theme-toggle{width:44px; height:44px; border-radius:12px; border:1px solid var(--bd); background:var(--input); display:grid; place-items:center; cursor:pointer; font-size:16px; transition: all .2s;}
+.theme-toggle:hover{border-color: var(--bd-strong); transform: translateY(-1px);}
+.chart-wrap{position:relative; width:100%; height:240px; margin-top:12px;}
+.chart-wrap canvas{width:100% !important; height:100% !important;}
+.search-bar{display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;}
+.search-bar input{flex:1; min-width:200px; height:40px; padding-left:40px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%237d90b1" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-3.5-3.5"/></svg>'); background-repeat:no-repeat; background-position:14px center;}
+.filter-chips{display:flex; gap:6px; flex-wrap:wrap;}
+.chip{padding:6px 12px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid var(--bd); background:var(--input); color:var(--mut); cursor:pointer; transition: all .15s;}
+.chip.active{background:var(--blue); color:white; border-color:var(--blue); box-shadow:0 4px 12px var(--blue-glow);}
+.kbd{font-size:10px; background:var(--bd); padding:2px 6px; border-radius:4px; font-weight:700;}
+
+
+.report-grid{ }
+@media(max-width:900px){ .report-grid{grid-template-columns:1fr !important;} }
+@media print{ #reportChartsCard{break-inside:avoid; page-break-inside:avoid;} .chart-wrap{height:220px !important;} }
+
 </style>
 </head>
 <body>
-<div class="sidebar">
-  <div class="logo">🚀 FleetControl<small>Pro v5.0</small></div>
-  <nav class="nav">
-    <div class="nav-item active" data-view="dashboard">📊 Panel</div>
-    <div class="nav-item" data-view="vehicles">🚙 Vehículos</div>
-    <div class="nav-item" data-view="fuel">⛽ Combustible</div>
-    <div class="nav-item" data-view="maintenance">🛠️ Servicio</div>
-    <div class="nav-item" data-view="reports">📑 Reportes</div>
-  </nav>
+<div class="sidebar" role="navigation" aria-label="Principal">
+  <div class="brand">
+    <div class="brand-icon">F</div>
+    <div class="brand-text"><b>FleetControl</b><span>Pro v5.3 • UX</span></div>
+  </div>
+  <div class="nav" id="nav">
+    <div class="nav-item active" data-view="dashboard"><span class="ico">📊</span>Dashboard</div>
+    <div class="nav-item" data-view="vehicles"><span class="ico">🚗</span>Vehículos</div>
+    <div class="nav-item" data-view="fuel"><span class="ico">⛽</span>Combustible</div>
+    <div class="nav-item" data-view="maintenance"><span class="ico">🔧</span>Mantenimiento</div>
+    <div class="nav-item" data-view="reports"><span class="ico">📄</span>Reportes</div>
+  </div>
+  <div class="sidebar-foot"><div class="hint">Tus datos se guardan localmente. Exportá respaldo seguido.<br><br>💡 Tip: usá tanque lleno para un consumo real.</div></div>
 </div>
 
 <div class="main">
-  <div class="top">
-    <div><h2 id="vt"></h2><p id="vs"></p></div>
-    <div class="actions">
-      <select id="vsel"></select>
+  <div class="topbar">
+    <div class="top-left">
+      <h1 id="topTitle">Dashboard</h1>
+      <p id="topSub">Resumen operativo de tu flota</p>
+    </div>
+    <div class="top-actions">
+      <div class="select-wrap"><select id="vsel"></select></div>
+      <button class="theme-toggle" id="themeToggle" title="Cambiar tema">🌙</button>
     </div>
   </div>
 
-  <!-- PANEL -->
+  <div class="content">
+  <!-- DASHBOARD -->
   <div id="view-dashboard" class="view active">
     <div class="metrics">
-      <div class="metric"><h3>📍 Kilometraje</h3><div class="mv" id="m1">—</div><div class="ms" id="m1s"></div></div>
-      <div class="metric"><h3>⛽ Consumo</h3><div class="mv" id="m2">—</div><div class="ms" id="m2s"></div></div>
-      <div class="metric"><h3>💸 Gasto pagado</h3><div class="mv" id="m3">—</div><div class="ms" id="m3s"></div></div>
-      <div class="metric"><h3>📏 Costo por km</h3><div class="mv" id="m4">—</div><div class="ms" id="m4s"></div></div>
+      <div class="metric b1"><div class="metric-top"><h3>Kilometraje</h3><div class="metric-icon">📍</div></div><div class="mv" id="m1">—</div><div class="ms" id="m1s"></div></div>
+      <div class="metric b2"><div class="metric-top"><h3>Consumo</h3><div class="metric-icon">⛽</div></div><div class="mv" id="m2">—</div><div class="ms" id="m2s"></div></div>
+      <div class="metric b3"><div class="metric-top"><h3>Gasto pagado</h3><div class="metric-icon">💸</div></div><div class="mv" id="m3">—</div><div class="ms" id="m3s"></div></div>
+      <div class="metric b4"><div class="metric-top"><h3>Costo por km</h3><div class="metric-icon">📏</div></div><div class="mv" id="m4">—</div><div class="ms" id="m4s"></div></div>
     </div>
     <div class="card">
-      <div class="ct">Actualizar odómetro</div>
+      <div class="card-head"><div class="card-title"><span class="dot"></span>Resumen del mes actual</div></div>
+      <div class="metrics" style="margin-bottom:0">
+        <div class="metric b2"><h3>Combustible del mes</h3><div class="mv" id="monthFuel">—</div><div class="ms" id="monthFuelSub"></div></div>
+        <div class="metric b3"><h3>Servicios y otros</h3><div class="mv" id="monthService">—</div><div class="ms">Registrados este mes</div></div>
+        <div class="metric b4"><h3>Total del mes</h3><div class="mv" id="monthTotal">—</div><div class="ms" id="monthTotalSub"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title green"><span class="dot"></span>Actualizar odómetro</div></div>
       <form id="fOdo" class="form">
-        <div><label>Kilometraje actual</label><input type="number" id="odoKm" min="0" step="1" required></div>
-        <button class="btn" type="submit">Guardar km</button>
+        <div><label>Kilometraje actual</label><input type="number" id="odoKm" min="0" step="1" placeholder="Ej: 45230" required></div>
+        <button class="btn primary" type="submit">Guardar km</button>
       </form>
     </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span class="dot"></span>Evolución de consumo</div><div class="filter-chips" id="chartFilters"><div class="chip active" data-range="all">Todo</div><div class="chip" data-range="30">30d</div><div class="chip" data-range="90">90d</div></div></div>
+      <div class="chart-wrap"><canvas id="chartConsumption"></canvas></div>
+      <div class="ms" style="margin-top:10px;" id="chartLegend">Cada punto es una carga. Azul = L/100km, verde = costo.</div>
+    </div>
     <div class="grid2">
-      <div class="card"><div class="ct">Desgaste de componentes</div><div id="partsA"></div></div>
-      <div class="card"><div class="ct">🔔 Alertas</div><div id="alerts"></div></div>
+      <div class="card"><div class="card-head"><div class="card-title"><span class="dot"></span>Desgaste de componentes</div></div><div id="partsA"></div></div>
+      <div class="card"><div class="card-head"><div class="card-title orange"><span class="dot"></span>Alertas inteligentes</div></div><div id="alerts"></div></div>
     </div>
   </div>
 
-  <!-- VEHÍCULOS -->
+  <!-- VEHICULOS -->
   <div id="view-vehicles" class="view">
     <div class="card">
-      <div class="ct">Agregar vehículo</div>
+      <div class="card-head"><div class="card-title"><span class="dot"></span>Agregar vehículo</div></div>
       <form id="fVeh">
         <div class="form">
-          <div><label>Marca y modelo</label><input id="vName" maxlength="40" required></div>
-          <div><label>Patente / Chapa</label><input id="vPlate" maxlength="12" required></div>
-          <div><label>Tipo de vehículo</label><select id="vKind"><option>Auto</option><option>Moto</option></select></div>
+          <div><label>Marca y modelo</label><input id="vName" maxlength="40" placeholder="Ej: Toyota Hilux" required></div>
+          <div><label>Patente / Chapa</label><input id="vPlate" maxlength="12" placeholder="AA1234" required></div>
+          <div><label>Tipo</label><select id="vKind"><option>Auto</option><option>Moto</option></select></div>
           <div><label>Combustible</label><select id="vType"><option>Nafta</option><option>Diésel</option><option>GNC</option></select></div>
           <div><label>Consumo (L cada 100 km)</label><input type="number" id="vPerf" min="1" step="0.1" placeholder="Ej: 12" required></div>
-          <div><label>Kilometraje actual</label><input type="number" id="vKm" min="0" required></div>
+          <div><label>Kilometraje actual</label><input type="number" id="vKm" min="0" placeholder="Ej: 12000" required></div>
         </div>
-        <button class="btn" style="margin-top:14px" type="submit">Agregar vehículo</button>
+        <button class="btn primary" style="margin-top:18px" type="submit">＋ Agregar vehículo</button>
       </form>
     </div>
-    <div class="card"><div class="ct">Flota</div><div class="gallery" id="gallery"></div></div>
+    <div class="card"><div class="card-head"><div class="card-title"><span class="dot"></span>Flota</div><div class="search-bar" style="margin:0"><input id="searchVehicles" placeholder="Buscar por marca o patente..."></div></div><div class="gallery" id="gallery"></div></div>
     <div class="card">
-      <div class="ct">Respaldo de datos</div>
-      <p class="ms" style="margin-bottom:12px">Tus datos se guardan solo en este navegador. Descargá un respaldo con frecuencia.</p>
-      <div class="actions">
-        <button class="btn" id="btnBackup" type="button">💾 Exportar respaldo</button>
+      <div class="card-head"><div class="card-title"><span class="dot"></span>Respaldo de datos</div></div>
+      <p class="ms" style="margin-bottom:14px">Tus datos viven en este navegador. Descargá un respaldo con frecuencia para no perderlos.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn primary" id="btnBackup" type="button">💾 Exportar respaldo</button>
+        <button class="btn ghost" id="btnCsv" type="button">📊 Exportar a Excel (CSV)</button>
         <button class="btn ghost" id="btnRestore" type="button">📂 Importar respaldo</button>
         <input type="file" id="fileRestore" accept="application/json,.json" style="display:none">
       </div>
@@ -138,48 +292,48 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
   <!-- COMBUSTIBLE -->
   <div id="view-fuel" class="view">
     <div class="card">
-      <div class="ct">Registrar carga</div>
+      <div class="card-head"><div class="card-title"><span class="dot"></span>Registrar carga</div></div>
       <form id="fFuel" class="form">
         <div><label>Fecha</label><input type="date" id="fDate" required></div>
         <div><label>Estación</label><input id="fStation" maxlength="40" placeholder="Opcional"></div>
-        <div><label>Precio por litro (Gs.)</label><input type="text" inputmode="decimal" id="fPrice" placeholder="Ej: 7.090" autocomplete="off"></div>
-        <div><label>Monto pagado (Gs.)</label><input type="text" inputmode="decimal" id="fAmt" placeholder="Ej: 20.000" autocomplete="off"></div>
-        <div><label>Litros (se calculan con el monto)</label><input type="text" inputmode="decimal" id="fLit" placeholder="Ej: 2,82" autocomplete="off"></div>
-        <div><label>Km al cargar</label><input type="number" id="fKm" min="0" required></div>
+        <div><label>Precio por litro (Gs.)</label><input type="text" inputmode="decimal" id="fPrice" placeholder="Ej: 7.090"></div>
+        <div><label>Monto pagado (Gs.)</label><input type="text" inputmode="decimal" id="fAmt" placeholder="Ej: 200.000"></div>
+        <div><label>Litros (auto-calculado)</label><input type="text" inputmode="decimal" id="fLit" placeholder="Ej: 28,2"></div>
+        <div><label>Km al cargar</label><input type="number" id="fKm" min="0" required placeholder="Odómetro"></div>
         <div><label>¿Tanque lleno?</label><select id="fFull"><option value="1">Sí, llené el tanque</option><option value="0">No, carga parcial</option><option value="">Sin confirmar</option></select></div>
-        <div id="fHint" class="ms" style="grid-column:1/-1;min-height:16px"></div>
-        <button class="btn" id="fSubmit" type="submit">Guardar carga</button>
+        <div id="fHint" class="ms" style="grid-column:1/-1; min-height:16px; padding:6px 0;"></div>
+        <button class="btn primary" id="fSubmit" type="submit">Guardar carga</button>
         <button class="btn ghost" id="fCancel" type="button" style="display:none">Cancelar</button>
       </form>
     </div>
-    <div class="card"><div class="ct">Historial de cargas</div><div class="tw" id="fuelTable"></div></div>
+    <div class="card"><div class="card-head"><div class="card-title"><span class="dot"></span>Historial de cargas</div><div class="search-bar" style="margin:0"><input id="searchFuel" placeholder="Buscar estación, fecha..."><div class="filter-chips"><div class="chip active" data-f="all">Todas</div><div class="chip" data-f="full">Lleno</div><div class="chip" data-f="partial">Parcial</div></div></div></div><div class="tw" id="fuelTable"></div></div>
   </div>
 
-  <!-- SERVICIO -->
+  <!-- MANTENIMIENTO -->
   <div id="view-maintenance" class="view">
-    <div class="card"><div class="ct">Estado de componentes (intervalos de referencia: ajustalos según el fabricante)</div><div id="partsM"></div></div>
+    <div class="card"><div class="card-head"><div class="card-title"><span class="dot"></span>Estado de componentes</div><span class="ms">Intervalos de referencia: ajustalos según fabricante</span></div><div id="partsM"></div></div>
     <div class="card">
-      <div class="ct">Agregar componente</div>
+      <div class="card-head"><div class="card-title green"><span class="dot"></span>Agregar componente</div></div>
       <form id="fPart" class="form">
         <div><label>Nombre</label><input id="pName" maxlength="40" placeholder="Ej: Correa de distribución" required></div>
-        <div><label>Cambiar cada (km)</label><input type="number" id="pInt" min="1" required></div>
+        <div><label>Cambiar cada (km)</label><input type="number" id="pInt" min="1" placeholder="40000" required></div>
         <div><label>Km desde el último cambio</label><input type="number" id="pUsed" min="0" placeholder="Vacío = no lo sé"></div>
-        <button class="btn" type="submit">Agregar</button>
+        <button class="btn primary" type="submit">Agregar</button>
       </form>
     </div>
     <div class="card">
-      <div class="ct">Registrar servicio o gasto</div>
+      <div class="card-head"><div class="card-title orange"><span class="dot"></span>Registrar servicio o gasto</div></div>
       <form id="fSvc" class="form">
         <div><label>Componente</label><select id="sPart"></select></div>
-        <div><label>Detalle (obligatorio si es otro gasto)</label><input id="sNote" maxlength="40" placeholder="Ej: Lavado, seguro, multa"></div>
+        <div><label>Detalle</label><input id="sNote" maxlength="40" placeholder="Ej: Lavado, seguro, multa"></div>
         <div><label>Fecha</label><input type="date" id="sDate" required></div>
-        <div><label>Km del servicio (vacío = actual)</label><input type="number" id="sKm" min="0"></div>
+        <div><label>Km del servicio</label><input type="number" id="sKm" min="0" placeholder="Vacío = actual"></div>
         <div><label>Taller</label><input id="sShop" maxlength="40" placeholder="Opcional"></div>
-        <div><label>Costo</label><input type="number" id="sCost" min="0" value="0"></div>
-        <button class="btn" type="submit">Registrar</button>
+        <div><label>Costo (Gs.)</label><input type="number" id="sCost" min="0" value="0"></div>
+        <button class="btn primary" type="submit">Registrar</button>
       </form>
     </div>
-    <div class="card"><div class="ct">Historial de servicios</div><div class="tw" id="svcTable"></div></div>
+    <div class="card"><div class="card-head"><div class="card-title"><span class="dot"></span>Historial de servicios</div><div class="search-bar" style="margin:0"><input id="searchSvc" placeholder="Buscar componente, taller..."></div></div><div class="tw" id="svcTable"></div></div>
   </div>
 
   <!-- REPORTES -->
@@ -188,10 +342,18 @@ body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
       <div class="form">
         <div><label>Alcance</label><select id="rScope"><option value="one">Vehículo seleccionado</option><option value="all">Toda la flota</option></select></div>
         <div><label>Período</label><select id="rPeriod"><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="365">Último año</option><option value="0">Todo el historial</option></select></div>
-        <button class="btn" id="btnPrint" type="button">📄 Imprimir / Guardar como PDF</button>
+        <button class="btn ghost" id="btnPrint" type="button">📄 Imprimir / PDF</button>
+      </div>
+    </div>
+    <div class="card" id="reportChartsCard">
+      <div class="card-head"><div class="card-title"><span class="dot"></span>Análisis visual</div><div class="filter-chips"><div class="chip active" data-rc="6">6 meses</div><div class="chip" data-rc="12">12 meses</div></div></div>
+      <div style="display:grid; grid-template-columns:1.2fr .8fr; gap:18px;" class="report-grid">
+        <div><div class="ms" style="margin-bottom:8px; font-weight:600;">Gasto mensual (Gs.) - Combustible vs Servicios</div><div class="chart-wrap" style="height:260px;"><canvas id="chartMonthly"></canvas></div></div>
+        <div><div class="ms" style="margin-bottom:8px; font-weight:600;">Distribución del gasto</div><div class="chart-wrap" style="height:260px;"><canvas id="chartDonut"></canvas></div><div id="donutLegend" class="ms" style="margin-top:10px;"></div></div>
       </div>
     </div>
     <div id="reportBox"></div>
+  </div>
   </div>
 </div>
 <div id="toast"></div>
@@ -261,7 +423,7 @@ function clean(s) {
       let id = Number(x.id);
       if (!(id > 0) || !Number.isFinite(id) || used.has(id)) id = Date.now() + i + Math.random();
       used.add(id);
-      return { id, date: x.date, station: str(x.station, 40), liters: +x.liters, price: +x.price, km: +x.km,
+      return { id, date: x.date, station: str(x.station, 40), liters: +x.liters, price: +x.price, amount: nn(x.amount, 1e11) && +x.amount > 0 ? +x.amount : (+x.liters * +x.price), km: +x.km,
         full: x.full === true || x.full === false ? x.full : null };
     });
     const services = arr(v.services).filter(x => x && okDate(x.date) && x.date <= T && nn(x.cost, 1e11) && nn(x.km, 5e6)).map(x => ({
@@ -315,6 +477,7 @@ function recalcPart(v, name) {
   if (ks.length) { p.current = Math.max(0, v.km - Math.max(...ks)); p.confirmed = true; }
   else p.confirmed = false;
 }
+function fuelCost(x) { return fin(x.amount) && x.amount >= 0 ? x.amount : x.liters * x.price; }
 function syncPrice(v) {
   const last = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km || (b.id || 0) - (a.id || 0))[0];
   v.price = last ? last.price : 0;
@@ -324,7 +487,7 @@ function addKm(v, delta) {
   v.parts.forEach(p => p.current += delta);
 }
 
-// Consumo real: solo entre cargas marcadas como tanque lleno (primera y última).
+// Cálculo alternativo: intervalos entre cargas marcadas como tanque lleno.
 // Las cargas intermedias (parciales o de tipo desconocido) suman como combustible consumido.
 function intervals(list) {
   const f = [...list].sort((a, b) => a.km - b.km || a.date.localeCompare(b.date) || (a.id || 0) - (b.id || 0));
@@ -335,21 +498,42 @@ function intervals(list) {
     if (prev >= 0) {
       const seg = f.slice(prev + 1, i + 1), d = x.km - f[prev].km;
       const L = seg.reduce((s, y) => s + y.liters, 0);
-      if (d > 0 && L > 0) out.push({ start: f[prev].date, date: x.date, dist: d, L, C: seg.reduce((s, y) => s + y.liters * y.price, 0) });
+      if (d > 0 && L > 0) out.push({ start: f[prev].date, date: x.date, dist: d, L, C: seg.reduce((s, y) => s + fuelCost(y), 0) });
     }
     prev = i;
   });
   return out;
 }
 
-// Suma los intervalos cuyo tanque lleno de cierre cae dentro del período (from).
-// El tanque lleno inicial puede ser anterior al período.
+// Suma los intervalos por carga cuyo registro cae dentro del período (from).
+// La carga anterior puede ser anterior al período.
 function calc(list, from) {
   const iv = intervals(list).filter(i => !from || i.date >= from);
   const dist = iv.reduce((s, i) => s + i.dist, 0);
   const L = iv.reduce((s, i) => s + i.L, 0);
   const C = iv.reduce((s, i) => s + i.C, 0);
   return dist > 0 && L > 0 ? { real: true, dist, L, C, start: iv.map(i => i.start).sort()[0], end: iv.map(i => i.date).sort().pop() } : { real: false, dist: 0, L: 0, C: 0 };
+}
+
+
+const MIN_KM = 50, CONF_KM = 300;
+// Estimación por cargas: se aproxima el combustible usado desde la carga anterior.
+// Supone que cargás cuando el tanque está bajo o en reserva. No depende de "tanque lleno".
+// Las cargas con el mismo km que la anterior se omiten (no hay distancia que medir).
+function measure(list, from) {
+  const none = { real: false, dist: 0, L: 0, C: 0 };
+  const f = [...list].sort((a, b) => a.km - b.km || a.date.localeCompare(b.date) || (a.id || 0) - (b.id || 0));
+  let dist = 0, L = 0, C = 0, start = null, end = null;
+  for (let i = 1; i < f.length; i++) {
+    const x = f[i], d = x.km - f[i - 1].km;
+    if (from && x.date < from) continue;
+    if (d <= 0) continue;
+    dist += d; L += x.liters; C += fuelCost(x);
+    if (!start) start = f[i - 1].date;
+    end = x.date;
+  }
+  if (dist < MIN_KM || L <= 0) return none;
+  return { real: true, approx: dist < CONF_KM, dist, L, C, start, end };
 }
 
 // Detecta cargas cuyo km contradice el orden de las fechas.
@@ -361,13 +545,13 @@ function inconsistent(list) { return badPairs(list).length > 0; }
 
 function stats(v) {
   const liters = v.fuel.reduce((s, x) => s + x.liters, 0);
-  const cost = v.fuel.reduce((s, x) => s + x.liters * x.price, 0);
+  const cost = v.fuel.reduce((s, x) => s + fuelCost(x), 0);
   const last = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km)[0];
   let perf = v.perf, cpk = (last ? last.price : v.price) / v.perf;
   const bad = inconsistent(v.fuel);
-  const c = bad ? { real: false, dist: 0, L: 0, C: 0 } : calc(v.fuel);
+  const c = bad ? { real: false, dist: 0, L: 0, C: 0 } : measure(v.fuel);
   if (c.real) { perf = c.dist / c.L; cpk = c.C / c.dist; }
-  return { liters, cost, perf, cpk, real: c.real, src: last ? 'carga' : 'base', dist: c.dist, cL: c.L, cC: c.C, bad };
+  return { liters, cost, perf, cpk, real: c.real, src: last ? 'carga' : 'base', dist: c.dist, cL: c.L, cC: c.C, bad, approx: !!c.approx };
 }
 
 function partState(p) {
@@ -410,21 +594,32 @@ function partsHTML(v, withAdjust) {
 
 function renderDashboard(v) {
   if (!v) {
-    ['m1', 'm2', 'm3', 'm4'].forEach(id => { $(id).textContent = '—'; $(id + 's').textContent = ''; });
+    ['m1', 'm2', 'm3', 'm4', 'monthFuel', 'monthService', 'monthTotal'].forEach(id => { $(id).textContent = '—'; });
+    ['m1s', 'm2s', 'm3s', 'm4s', 'monthFuelSub', 'monthTotalSub'].forEach(id => { $(id).textContent = ''; });
     $('partsA').innerHTML = $('alerts').innerHTML = '<div class="empty">Agregá un vehículo para comenzar.</div>';
     return;
   }
   const s = stats(v);
+  const monthKey = today().slice(0, 7);
+  const monthFuelRows = v.fuel.filter(x => x.date.slice(0, 7) === monthKey);
+  const monthServiceRows = v.services.filter(x => x.date.slice(0, 7) === monthKey);
+  const monthFuelCost = monthFuelRows.reduce((sum, x) => sum + fuelCost(x), 0);
+  const monthServiceCost = monthServiceRows.reduce((sum, x) => sum + x.cost, 0);
+  const monthLiters = monthFuelRows.reduce((sum, x) => sum + x.liters, 0);
+  $('monthFuel').textContent = money(monthFuelCost);
+  $('monthFuelSub').textContent = num(monthLiters, 3) + ' L · ' + monthFuelRows.length + ' carga(s)';
+  $('monthService').textContent = money(monthServiceCost);
+  $('monthTotal').textContent = money(monthFuelCost + monthServiceCost);
+  $('monthTotalSub').textContent = (monthFuelRows.length + monthServiceRows.length) + ' movimiento(s) registrados';
   $('m1').textContent = num(v.km) + ' km';
   $('m1s').textContent = (v.kind ? v.kind + ' · ' : '') + v.type;
   $('m2').textContent = num(100 / s.perf, 1) + ' L/100 km';
-  const unk = v.fuel.filter(x => x.full === null).length;
-  $('m2s').textContent = s.real ? 'REAL: ' + num(s.dist) + ' km con ' + num(s.cL, 2) + ' L (tanque lleno a lleno)'
-    : (s.bad ? 'ESTIMADO (declarado): hay cargas con fechas y km contradictorios, revisalas' : 'ESTIMADO (declarado): no hay un intervalo válido de tanque lleno a tanque lleno') + (unk ? ' · ' + unk + ' carga(s) sin tipo, marcalas en Combustible' : '');
+  $('m2s').textContent = s.real ? (s.approx ? 'Estimación orientativa: ' + num(s.dist) + ' km (menos de ' + CONF_KM + ')' : 'Estimación por cargas: ' + num(s.dist) + ' km con ' + num(s.cL, 3) + ' L')
+    : (s.bad ? 'ESTIMADO (declarado): hay cargas con fechas y km contradictorios, revisalas' : 'ESTIMADO (declarado): faltan al menos ' + MIN_KM + ' km registrados entre cargas');
   $('m3').textContent = money(s.cost);
   $('m3s').textContent = num(s.liters, 2) + ' L pagados' + (s.real ? ' · consumido est.: ' + money(s.cC) : '');
   $('m4').textContent = s.cpk > 0 ? money(s.cpk) : '—';
-  $('m4s').textContent = s.real ? 'REAL: ' + money(s.cC) + ' en ' + num(s.dist) + ' km (' + num(s.cL, 2) + ' L)'
+  $('m4s').textContent = s.real ? (s.approx ? 'Estimación orientativa: ' : 'Estimación por cargas: ') + money(s.cC) + ' en ' + num(s.dist) + ' km (' + num(s.cL, 3) + ' L)'
     : s.src === 'carga' ? 'ESTIMADO: precio de tu última carga × ' + num(100 / v.perf, 1) + ' L/100 km'
     : 'Registrá una carga para estimar el costo por km';
   if (document.activeElement !== $('odoKm')) $('odoKm').value = v.km;
@@ -468,8 +663,8 @@ function renderFuel(v) {
     prev = i;
   });
   const rows = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km).map(x => `<tr>
-    <td>${fdate(x.date)}</td><td>${esc(x.station || '-')}</td><td>${num(x.liters, 2)} L${x.full === true ? '' : x.full === false ? ' (parcial)' : ' (tipo ?)'}</td>
-    <td>${money(x.price)}</td><td>${money(x.liters * x.price)}</td><td>${num(x.km)} km</td>
+    <td>${fdate(x.date)}</td><td>${esc(x.station || '-')}</td><td>${num(x.liters, 2)} L</td>
+    <td>${money(x.price)}</td><td>${money(fuelCost(x))}</td><td>${num(x.km)} km</td>
     <td>${perf[x.id] ? num(100 / perf[x.id], 1) + ' L/100 km' : '-'}</td>
     <td style="white-space:nowrap"><button class="btn ghost sm" data-act="editfuel" data-id="${x.id}">Editar</button> <button class="btn ghost sm" data-act="togfull" data-id="${x.id}">Tipo</button> <button class="btn red sm" data-act="delfuel" data-id="${x.id}">✕</button></td></tr>`).join('');
   box.innerHTML = (inconsistent(v.fuel) ? '<p style="color:var(--orange);font-size:13px;margin-bottom:10px">⚠️ Cargas con km menor al de una carga anterior: ' + badPairs(v.fuel).slice(0, 3).map(x => fdate(x.date) + ' (' + num(x.km) + ' km)').join(', ') + '. Corregilas con Editar o eliminalas; mientras tanto el consumo no se muestra como real.</p>' : '') + `<table><thead><tr><th>Fecha</th><th>Estación</th><th>Litros</th><th>Precio/L</th><th>Total</th><th>Km</th><th>Consumo</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -501,9 +696,9 @@ function renderReport() {
   const from = days ? isoLocal(Date.now() - (days - 1) * 864e5) : '0000-00-00';
   const rows = list.map(v => {
     const fuel = v.fuel.filter(x => x.date >= from), svc = v.services.filter(x => x.date >= from);
-    const c = inconsistent(v.fuel) ? { real: false, dist: 0, L: 0, C: 0 } : calc(v.fuel, from);
+    const c = inconsistent(v.fuel) ? { real: false, dist: 0, L: 0, C: 0 } : measure(v.fuel, from);
     const liters = fuel.reduce((s, x) => s + x.liters, 0);
-    const fcost = fuel.reduce((s, x) => s + x.liters * x.price, 0);
+    const fcost = fuel.reduce((s, x) => s + fuelCost(x), 0);
     const scost = svc.reduce((s, x) => s + x.cost, 0);
     return { v, fuel, svc, c, liters, fcost, scost, total: fcost + scost };
   });
@@ -518,7 +713,7 @@ function renderReport() {
   const months = {};
   const addM = (d, k, val) => { const m = d.slice(0, 7); (months[m] = months[m] || { f: 0, s: 0 })[k] += val; };
   rows.forEach(r => {
-    r.fuel.forEach(x => addM(x.date, 'f', x.liters * x.price));
+    r.fuel.forEach(x => addM(x.date, 'f', fuelCost(x)));
     r.svc.forEach(x => addM(x.date, 's', x.cost));
   });
   const mKeys = Object.keys(months).sort();
@@ -531,12 +726,12 @@ function renderReport() {
   const tips = [];
   if (T) tips.push(`El combustible representa el ${pct(F)}% del gasto y el mantenimiento/otros el ${pS}%.`);
   if (D > 0) tips.push(`Costo operativo estimado: ${money((CC + SR) / D)} por km (${money(CC / D)} en combustible consumido y ${money(SR / D)} en servicios; los servicios son los pagados en el período y los km salen de intervalos cerrados, por lo que pueden no coincidir exactamente).`);
-  else tips.push('No hay intervalos de tanque lleno a tanque lleno cerrados en este período. Revisá el historial y registrá las cargas que falten.');
+  else tips.push('El consumo por cargas es una estimación, especialmente si el nivel del tanque cambia mucho entre cargas. Registrá cada carga y su kilometraje; no hace falta llenar el tanque.');
   rows.forEach(r => {
-    if (!r.c.real) return;
+    if (!r.c.real || r.c.approx) return;
     const real = 100 * r.c.L / r.c.dist, dec = 100 / r.v.perf;
     if (Math.abs(real - dec) / dec > 0.1) {
-      tips.push(`${r.v.name}: consume ${num(real, 1)} L/100 km reales contra ${num(dec, 1)} declarados (${real > dec ? 'conviene revisarlo' : 'mejor de lo esperado'}).`);
+      tips.push(`${r.v.name}: consume ${num(real, 1)} L/100 km estimados contra ${num(dec, 1)} declarados (${real > dec ? 'conviene revisarlo' : 'mejor de lo esperado'}).`);
     }
   });
   if (mKeys.length) {
@@ -544,7 +739,8 @@ function renderReport() {
     const top = mKeys.reduce((a, b) => tot(a) >= tot(b) ? a : b);
     tips.push(`Mes de mayor gasto: ${top.split('-').reverse().join('/')} (${money(tot(top))}).`);
   }
-  if (D > 0) tips.push('Intervalos de consumo medidos: del ' + fdate(rr.map(r => r.c.start).sort()[0]) + ' al ' + fdate(rr.map(r => r.c.end).sort().pop()) + ' (' + num(D) + ' km). El gasto pagado y estos intervalos pueden no cubrir exactamente las mismas fechas.');
+  if (rr.some(r => r.c.approx)) tips.push('* Consumo con pocos km medidos (menos de ' + CONF_KM + '): será más preciso cuanto más registres.');
+  if (D > 0) tips.push('Tramo de consumo estimado por cargas: del ' + fdate(rr.map(r => r.c.start).sort()[0]) + ' al ' + fdate(rr.map(r => r.c.end).sort().pop()) + ' (' + num(D) + ' km). El gasto pagado y estos intervalos pueden no cubrir exactamente las mismas fechas.');
   if (rows.some(r => inconsistent(r.v.fuel))) tips.push('⚠️ Hay cargas con km que contradicen el orden de las fechas; revisá el historial de combustible.');
   const over = alerts.filter(a => a.st.lvl === 2).length;
   tips.push(over ? `⚠️ ${over} componente(s) requieren atención inmediata.` : unc.length ? `⚠️ ${unc.length} componente(s) con desgaste sin confirmar: no se puede asegurar su estado.` : '✅ No hay componentes en estado crítico.');
@@ -554,7 +750,7 @@ function renderReport() {
   const monthRows = mKeys.map(m => `<tr><td>${m.split('-').reverse().join('/')}</td><td>${money(months[m].f)}</td><td>${money(months[m].s)}</td><td><b>${money(months[m].f + months[m].s)}</b></td></tr>`).join('');
   const vehRows = rows.map(r => `<tr><td>${esc(r.v.name)}<br><small>${esc(r.v.plate)}</small></td>
     <td>${num(r.liters, 2)}</td><td>${money(r.fcost)}</td><td>${money(r.scost)}</td><td><b>${money(r.total)}</b></td>
-    <td>${r.c.real ? num(r.c.dist) : '-'}</td><td>${r.c.real ? money(r.c.C / r.c.dist) : '-'}</td><td>${r.c.real ? num(100 * r.c.L / r.c.dist, 1) : '-'}</td></tr>`).join('');
+    <td>${r.c.real ? num(r.c.dist) : '-'}</td><td>${r.c.real ? money(r.c.C / r.c.dist) : '-'}</td><td>${r.c.real ? num(100 * r.c.L / r.c.dist, 1) + (r.c.approx ? '*' : '') : '-'}</td></tr>`).join('');
 
   box.innerHTML = `
   <div class="card"><div class="ct">Reporte ejecutivo · FleetControl Pro</div>
@@ -564,7 +760,7 @@ function renderReport() {
     <div class="metric"><h3>Gasto total</h3><div class="mv">${money(T)}</div><div class="ms">Pagado en el período</div></div>
     <div class="metric"><h3>Combustible</h3><div class="mv">${money(F)}</div><div class="ms">${num(L, 2)} L pagados · ${pct(F)}%</div></div>
     <div class="metric"><h3>Mantenimiento y otros</h3><div class="mv">${money(S)}</div><div class="ms">${pS}% del gasto</div></div>
-    <div class="metric"><h3>Combustible por km</h3><div class="mv">${D > 0 ? money(CC / D) : '—'}</div><div class="ms">${D > 0 ? 'REAL: ' + num(D) + ' km · ' + num(CL, 2) + ' L (intervalos cerrados en el período)' : 'Sin intervalos de tanque lleno a tanque lleno cerrados en el período'}</div></div>
+    <div class="metric"><h3>Combustible por km</h3><div class="mv">${D > 0 ? money(CC / D) : '—'}</div><div class="ms">${D > 0 ? (rr.every(r => !r.c.approx) ? 'Medido: ' : 'Poco preciso: ') + num(D) + ' km · ' + num(CL, 2) + ' L (' + (rr.every(r => !r.c.approx) ? 'estimado a partir de tus cargas' : 'menos de ' + CONF_KM + ' km medidos') + ')' : 'Sin datos suficientes: registrá cargas con km distintos y al menos ' + MIN_KM + ' km acumulados'}</div></div>
   </div>
   <div class="card"><div class="ct">Distribución del gasto</div>
     <div class="bar" style="height:14px;display:flex"><div style="width:${pct(F)}%;background:var(--blue)"></div><div style="width:${pS}%;background:var(--orange)"></div></div>
@@ -652,7 +848,7 @@ document.addEventListener('click', e => {
     if (x) {
       editFuelId = x.id; editFuelVeh = v.id;
       $('fDate').value = x.date; $('fStation').value = x.station || ''; $('fLit').value = x.liters;
-      $('fPrice').value = x.price; $('fAmt').value = ''; $('fKm').value = x.km; $('fFull').value = x.full === true ? '1' : x.full === false ? '0' : '';
+      $('fPrice').value = x.price; $('fAmt').value = x.amount || ''; $('fKm').value = x.km; $('fFull').value = x.full === true ? '1' : x.full === false ? '0' : '';
       $('fSubmit').textContent = 'Guardar cambios'; $('fCancel').style.display = '';
       window.scrollTo({ top: 0, behavior: 'smooth' }); toast('Editando carga: modificá y guardá');
     }
@@ -752,7 +948,7 @@ $('fFuel').addEventListener('submit', e => {
   const v = cur(); if (!v) return toast('Primero agregá un vehículo', true);
   if (editFuelId !== null && editFuelVeh !== v.id) { endEdit(); return toast('Edición cancelada: cambió el vehículo', true); }
   const km = parseInt($('fKm').value, 10), date = $('fDate').value;
-  const liters = parseDec($('fLit').value), price = parseGs($('fPrice').value);
+  const liters = parseDec($('fLit').value), price = parseGs($('fPrice').value), enteredAmount = parseGs($('fAmt').value);
   if (!(fin(liters) && liters > 0 && liters <= 2000) || !(fin(price) && price > 0 && price <= 1e7) || !(fin(km) && km >= 0 && km <= 5e6)) return toast('Revisá litros, precio y km', true);
   if (!okDate(date) || date > today()) return toast('Fecha inválida o futura', true);
   const others = v.fuel.filter(x => x.id !== editFuelId);
@@ -766,7 +962,7 @@ $('fFuel').addEventListener('submit', e => {
   const delta = !editFuelId && km > v.km ? km - v.km : 0;
   if (delta) addKm(v, delta);
   const wasEdit = !!editFuelId;
-  const rec = { id: editFuelId || uid(), date, station: $('fStation').value.trim(), liters, price, km, full: $('fFull').value === '1' ? true : $('fFull').value === '0' ? false : null };
+  const rec = { id: editFuelId || uid(), date, station: $('fStation').value.trim(), liters, price, amount: fin(enteredAmount) && enteredAmount > 0 ? enteredAmount : liters * price, km, full: $('fFull').value === '1' ? true : $('fFull').value === '0' ? false : null };
   const idx = v.fuel.findIndex(x => x.id === editFuelId);
   if (idx >= 0) v.fuel[idx] = rec; else v.fuel.push(rec);
   syncPrice(v);
@@ -809,6 +1005,32 @@ $('fPart').addEventListener('submit', e => {
   save(); render(); e.target.reset(); toast('Componente agregado');
 });
 
+function csvCell(value) {
+  const s = String(value == null ? '' : value);
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+function exportCSV() {
+  if (!state.vehicles.length) return toast('Agregá al menos un vehículo antes de exportar', true);
+  const rows = [['Tipo', 'Vehículo', 'Patente', 'Fecha', 'Detalle', 'Litros', 'Precio por litro (Gs.)', 'Monto (Gs.)', 'Kilometraje', 'Tipo de carga', 'Taller']];
+  state.vehicles.forEach(v => {
+    v.fuel.forEach(x => rows.push([
+      'Combustible', v.name, v.plate, x.date, x.station || '', Number(x.liters).toFixed(4),
+      Math.round(x.price), Math.round(fuelCost(x)), Math.round(x.km),
+      x.full === true ? 'Tanque lleno' : x.full === false ? 'Parcial' : 'Sin confirmar', ''
+    ]));
+    v.services.forEach(x => rows.push([
+      'Servicio/otro gasto', v.name, v.plate, x.date, x.part, '', '', Math.round(x.cost),
+      Math.round(x.km), '', x.shop || ''
+    ]));
+  });
+  const csv = '\uFEFF' + rows.map(row => row.map(csvCell).join(';')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'fleetcontrol_movimientos_' + today() + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  toast('Archivo CSV exportado; podés abrirlo con Excel o una hoja de cálculo');
+}
 function downloadBackup(prefix) {
   const url = URL.createObjectURL(new Blob([JSON.stringify({ app: 'FleetControl', version: 5, ...state })], { type: 'application/json' }));
   const a = document.createElement('a');
@@ -817,6 +1039,7 @@ function downloadBackup(prefix) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 $('btnBackup').addEventListener('click', () => { downloadBackup('fleetcontrol_respaldo'); toast('Respaldo generado'); });
+$('btnCsv').addEventListener('click', exportCSV);
 $('btnRestore').addEventListener('click', () => $('fileRestore').click());
 $('fileRestore').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;
@@ -862,6 +1085,314 @@ $('fDate').value = today();
 $('sDate').value = today();
 switchView('dashboard');
 render();
+
+// Navegación mejorada + títulos
+const titles = {
+  dashboard: ['Dashboard','Resumen operativo de tu flota'],
+  vehicles: ['Vehículos','Gestioná tu flota y respaldos'],
+  fuel: ['Combustible','Registrá cargas y controlá consumo'],
+  maintenance: ['Mantenimiento','Desgaste y servicios'],
+  reports: ['Reportes','Análisis y exportación']
+};
+const originalSwitch = window.switchView || null;
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  const el = document.getElementById('view-'+v);
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.toggle('active', x.dataset.view===v));
+  const t = titles[v];
+  if(t){ document.getElementById('topTitle').textContent = t[0]; document.getElementById('topSub').textContent = t[1]; }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+document.querySelectorAll('.nav-item').forEach(n=>{ n.addEventListener('click', ()=>switchView(n.dataset.view)); });
+// Reemplazar switchView global si existe
+window.switchView = switchView;
+try{ switchView('dashboard'); }catch(e){}
+
+// === MEJORAS V2: TEMA CLARO/OSCURO ===
+const THEME_KEY='fleetcontrol_theme';
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem(THEME_KEY, t);
+  const btn=document.getElementById('themeToggle');
+  if(btn) btn.textContent = t==='light' ? '🌙' : '☀️';
+}
+(function initTheme(){
+  const saved=localStorage.getItem(THEME_KEY) || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  applyTheme(saved);
+})();
+document.getElementById('themeToggle')?.addEventListener('click', ()=>{
+  const cur=document.documentElement.getAttribute('data-theme')||'dark';
+  applyTheme(cur==='dark' ? 'light' : 'dark');
+});
+
+// === GRÁFICOS SIN LIBRERÍAS ===
+function drawLineChart(canvas, datasets, labels){
+  if(!canvas) return;
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width*dpr; canvas.height=rect.height*dpr;
+  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+  const W=rect.width, H=rect.height, pad={top:20,right:16,bottom:28,left:40};
+  ctx.clearRect(0,0,W,H);
+  const isLight=document.documentElement.getAttribute('data-theme')==='light';
+  const gridColor=isLight?'rgba(15,23,42,.08)':'rgba(148,163,184,.1)';
+  const textColor=isLight?'#64748b':'#7d90b1';
+  // grid
+  ctx.strokeStyle=gridColor; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){ const y=pad.top + (H-pad.top-pad.bottom)*i/4; ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke(); }
+  // find max
+  let max=0; datasets.forEach(ds=>{ ds.data.forEach(v=>{ if(v>max) max=v; }); });
+  if(max===0) max=1;
+  const colors=['#3b82f6','#34d399','#fbbf24','#a78bfa'];
+  datasets.forEach((ds, idx)=>{
+    const col=ds.color||colors[idx%colors.length];
+    ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.beginPath();
+    ds.data.forEach((v,i)=>{
+      const x=pad.left + (W-pad.left-pad.right)*(labels.length<=1?0.5:i/(labels.length-1));
+      const y=pad.top + (H-pad.top-pad.bottom)*(1 - v/max);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    // dots
+    ctx.fillStyle=col;
+    ds.data.forEach((v,i)=>{
+      const x=pad.left + (W-pad.left-pad.right)*(labels.length<=1?0.5:i/(labels.length-1));
+      const y=pad.top + (H-pad.top-pad.bottom)*(1 - v/max);
+      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(x,y,1.2,0,Math.PI*2); ctx.fill(); ctx.fillStyle=col;
+    });
+  });
+  // labels
+  ctx.fillStyle=textColor; ctx.font='10px Inter'; ctx.textAlign='center';
+  labels.forEach((lb,i)=>{
+    const x=pad.left + (W-pad.left-pad.right)*(labels.length<=1?0.5:i/(labels.length-1));
+    ctx.fillText(lb.slice(5), x, H-6);
+  });
+}
+
+let chartRange='all';
+function renderCharts(){
+  const v=cur(); const c=document.getElementById('chartConsumption'); if(!c) return;
+  if(!v || !v.fuel.length){ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); return; }
+  let fuel=[...v.fuel].sort((a,b)=>a.date.localeCompare(b.date));
+  if(chartRange!=='all'){ const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-parseInt(chartRange)); const iso=cutoff.toISOString().slice(0,10); fuel=fuel.filter(x=>x.date>=iso); }
+  if(fuel.length<2){ drawLineChart(c, [{data:fuel.map(f=>f.liters), color:'#3b82f6'}], fuel.map(f=>f.date)); return; }
+  // calcular L/100km por intervalos simples entre cargas
+  const dists=[]; const consumos=[]; const costos=[];
+  for(let i=1;i<fuel.length;i++){ const d=fuel[i].km - fuel[i-1].km; if(d<=0) continue; const l100=fuel[i].liters*100/d; dists.push(d); consumos.push(Math.min(l100,30)); costos.push(Math.min(fuelCost(fuel[i])/1000, 500)); }
+  const labels=fuel.slice(1).map(f=>f.date);
+  drawLineChart(c, [{data:consumos, color:'#5ea2ff'}, {data:costos, color:'#34d399'}], labels);
+}
+
+document.querySelectorAll('#chartFilters .chip').forEach(ch=>{ ch.addEventListener('click', ()=>{ document.querySelectorAll('#chartFilters .chip').forEach(x=>x.classList.remove('active')); ch.classList.add('active'); chartRange=ch.dataset.range; renderCharts(); }); });
+
+// === BÚSQUEDA Y FILTROS ===
+let fuelFilter='all';
+function setupFilters(){
+  const sV=document.getElementById('searchVehicles');
+  const sF=document.getElementById('searchFuel');
+  const sS=document.getElementById('searchSvc');
+  if(sV) sV.addEventListener('input', render);
+  if(sF) sF.addEventListener('input', render);
+  if(sS) sS.addEventListener('input', render);
+  document.querySelectorAll('[data-f]').forEach(ch=>{
+    ch.addEventListener('click', ()=>{
+      document.querySelectorAll('[data-f]').forEach(x=>x.classList.remove('active'));
+      ch.classList.add('active'); fuelFilter=ch.dataset.f; render();
+    });
+  });
+}
+setupFilters();
+
+// Hook into render original para aplicar filtros y gráficos
+const origRender = window.render || render;
+const origRenderReport = window.renderReport;
+window._origRender = origRender;
+window.render = function(){
+  _origRender();
+  renderCharts();
+  // apply vehicle gallery filter
+  const qV=(document.getElementById('searchVehicles')?.value||'').toLowerCase().trim();
+  if(qV){ document.querySelectorAll('#gallery .vc').forEach(card=>{ const txt=card.textContent.toLowerCase(); card.style.display = txt.includes(qV) ? '' : 'none'; }); }
+  const qF=(document.getElementById('searchFuel')?.value||'').toLowerCase().trim();
+  const fuelRows=document.querySelectorAll('#fuelTable table tbody tr');
+  fuelRows.forEach(tr=>{
+    let show=true;
+    if(qF && !tr.textContent.toLowerCase().includes(qF)) show=false;
+    if(fuelFilter!=='all'){
+      const txt=tr.textContent;
+      const isFull=txt.includes('lleno')||txt.includes('Tanque lleno');
+      if(fuelFilter==='full' && !isFull) show=false;
+      if(fuelFilter==='partial' && isFull) show=false;
+    }
+    tr.style.display=show?'':'none';
+  });
+  const qS=(document.getElementById('searchSvc')?.value||'').toLowerCase().trim();
+  if(qS){ document.querySelectorAll('#svcTable table tbody tr').forEach(tr=>{ tr.style.display = tr.textContent.toLowerCase().includes(qS) ? '' : 'none'; }); }
+};
+
+window.addEventListener('resize', ()=>{ clearTimeout(window._chartR); window._chartR=setTimeout(renderCharts,200); });
+
+
+// === REPORTES: GRAFICOS MENSUALES + DONUT + PDF CON GRAFICOS ===
+let reportMonths = 6;
+
+function getMonthlyData(scope='one', periodMonths=6){
+  const now=new Date();
+  const months=[];
+  for(let i=periodMonths-1;i>=0;i--){ const d=new Date(now.getFullYear(), now.getMonth()-i, 1); months.push({key:d.toISOString().slice(0,7), label:d.toLocaleDateString('es-PY',{month:'short', year:'2-digit'})}); }
+  const data=months.map(m=>({label:m.label, key:m.key, fuel:0, service:0}));
+  const vehicles = scope==='all' ? state.vehicles : (cur()? [cur()] : []);
+  vehicles.forEach(v=>{
+    v.fuel.forEach(f=>{
+      const k=f.date.slice(0,7);
+      const idx=data.findIndex(d=>d.key===k);
+      if(idx>=0) data[idx].fuel+=fuelCost(f);
+    });
+    v.services.forEach(s=>{
+      const k=s.date.slice(0,7);
+      const idx=data.findIndex(d=>d.key===k);
+      if(idx>=0) data[idx].service+=s.cost;
+    });
+  });
+  return data;
+}
+
+function drawBarChart(canvas, data){
+  if(!canvas) return;
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width*dpr; canvas.height=rect.height*dpr;
+  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+  const W=rect.width, H=rect.height, pad={top:20,right:12,bottom:36,left:48};
+  ctx.clearRect(0,0,W,H);
+  const isLight=document.documentElement.getAttribute('data-theme')==='light';
+  const gridColor=isLight?'rgba(15,23,42,.07)':'rgba(148,163,184,.1)';
+  const textColor=isLight?'#64748b':'#7d90b1';
+  let max=0; data.forEach(d=>{ const t=d.fuel+d.service; if(t>max) max=t; }); if(max===0) max=1;
+  // grid
+  ctx.strokeStyle=gridColor; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){ const y=pad.top + (H-pad.top-pad.bottom)*i/4; ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke(); }
+  const barW=(W-pad.left-pad.right)/data.length*0.6;
+  const gap=(W-pad.left-pad.right)/data.length*0.4;
+  data.forEach((d,i)=>{
+    const x0=pad.left + (W-pad.left-pad.right)*i/data.length + gap/2;
+    const totalH=(H-pad.top-pad.bottom)*(d.fuel+d.service)/max;
+    const fuelH=(H-pad.top-pad.bottom)*d.fuel/max;
+    const serviceH=totalH-fuelH;
+    const yBase=H-pad.bottom;
+    // service bottom? actually fuel bottom
+    // fuel
+    ctx.fillStyle='#3b82f6';
+    ctx.beginPath(); ctx.roundRect(x0, yBase-fuelH, barW, fuelH, [4,4,0,0]); ctx.fill();
+    // service on top
+    if(serviceH>1){
+      ctx.fillStyle='#fbbf24';
+      ctx.beginPath(); ctx.roundRect(x0, yBase-totalH, barW, serviceH, [4,4,0,0]); ctx.fill();
+    }
+  });
+  ctx.fillStyle=textColor; ctx.font='10px Inter'; ctx.textAlign='center';
+  data.forEach((d,i)=>{
+    const x=pad.left + (W-pad.left-pad.right)*i/data.length + (W-pad.left-pad.right)/data.length/2;
+    ctx.fillText(d.label, x, H-8);
+  });
+  // y labels
+  ctx.textAlign='right';
+  for(let i=0;i<=4;i++){
+    const v=max*(1-i/4);
+    const y=pad.top + (H-pad.top-pad.bottom)*i/4 +3;
+    ctx.fillText(v>=1000? (Math.round(v/1000)+'k') : Math.round(v).toString(), pad.left-8, y);
+  }
+}
+
+function drawDonutChart(canvas, fuelTotal, serviceTotal){
+  if(!canvas) return;
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width*dpr; canvas.height=rect.height*dpr;
+  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+  const W=rect.width, H=rect.height; ctx.clearRect(0,0,W,H);
+  const total=fuelTotal+serviceTotal; if(total===0){ ctx.fillStyle='#64748b'; ctx.font='13px Inter'; ctx.textAlign='center'; ctx.fillText('Sin datos en el período', W/2, H/2); return; }
+  const cx=W/2, cy=H/2, r=Math.min(W,H)/2-20, inner=r*0.62;
+  let start=-Math.PI/2;
+  const segments=[{val:fuelTotal, color:'#3b82f6', label:'Combustible'}, {val:serviceTotal, color:'#fbbf24', label:'Servicios'}];
+  segments.forEach(seg=>{
+    const angle=(seg.val/total)*Math.PI*2;
+    ctx.fillStyle=seg.color;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+angle); ctx.closePath(); ctx.fill();
+    start+=angle;
+  });
+  // hole
+  ctx.globalCompositeOperation='destination-out';
+  ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2); ctx.fill();
+  ctx.globalCompositeOperation='source-over';
+  const isLight=document.documentElement.getAttribute('data-theme')==='light';
+  ctx.fillStyle=isLight?'white':'#111e38';
+  ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2); ctx.fill();
+  // center text
+  ctx.fillStyle=isLight?'#0f172a':'#f1f6ff'; ctx.font='800 16px Inter'; ctx.textAlign='center'; ctx.fillText(money(total), cx, cy-2);
+  ctx.fillStyle='#64748b'; ctx.font='11px Inter'; ctx.fillText('Total', cx, cy+14);
+  // legend
+  const legend=document.getElementById('donutLegend');
+  if(legend){
+    const fuelPct=Math.round(fuelTotal/total*100);
+    legend.innerHTML=`<div style="display:flex; gap:12px; flex-wrap:wrap;"><span style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background:#3b82f6; border-radius:3px; display:inline-block;"></span> Combustible ${fuelPct}% - ${money(fuelTotal)}</span><span style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background:#fbbf24; border-radius:3px; display:inline-block;"></span> Servicios ${100-fuelPct}% - ${money(serviceTotal)}</span></div>`;
+  }
+}
+
+function renderReportCharts(){
+  const scope=document.getElementById('rScope')?.value||'one';
+  const data=getMonthlyData(scope, reportMonths);
+  drawBarChart(document.getElementById('chartMonthly'), data);
+  const fuelT=data.reduce((s,d)=>s+d.fuel,0);
+  const svcT=data.reduce((s,d)=>s+d.service,0);
+  drawDonutChart(document.getElementById('chartDonut'), fuelT, svcT);
+}
+
+// Hook into original renderReport
+const _origRenderReport = window.renderReport || function(){};
+window.renderReport = function(){
+  _origRenderReport();
+  setTimeout(renderReportCharts, 80);
+};
+
+// chips for report months
+document.querySelectorAll('[data-rc]').forEach(ch=>{
+  ch.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-rc]').forEach(x=>x.classList.remove('active'));
+    ch.classList.add('active');
+    reportMonths=parseInt(ch.dataset.rc,10);
+    renderReportCharts();
+  });
+});
+
+// PDF con graficos - mejorar btnPrint para incluir graficos
+const origBtnPrint = document.getElementById('btnPrint');
+if(origBtnPrint){
+  const newBtn=document.createElement('button');
+  newBtn.className='btn primary';
+  newBtn.id='btnPdfCharts';
+  newBtn.type='button';
+  newBtn.innerHTML='📊 PDF con gráficos';
+  newBtn.style.marginLeft='8px';
+  origBtnPrint.parentNode.appendChild(newBtn);
+  newBtn.addEventListener('click', ()=>{
+    // asegurar graficos renderizados
+    renderReportCharts();
+    renderCharts();
+    setTimeout(()=>{
+      toast('Generando PDF... elegí Guardar como PDF');
+      setTimeout(()=>window.print(), 600);
+    }, 300);
+  });
+}
+
+// Redibujar al cambiar tema o scope
+window.addEventListener('resize', ()=>{ clearTimeout(window._rptR); window._rptR=setTimeout(()=>{ renderReportCharts(); renderCharts(); },250); });
+document.getElementById('rScope')?.addEventListener('change', ()=> setTimeout(renderReportCharts,100));
+
 </script>
-</body>
+<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
 </html>
