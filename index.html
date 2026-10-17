@@ -1,287 +1,403 @@
 <!DOCTYPE html>
 <html lang="es">
-<head><style>
-@font-face {
-  font-family: "Optimistic";
-  font-style: normal;
-  font-weight: 400 600;
-  font-display: swap;
-  src: url("/fonts/OptimisticAI_VF_Optimized.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Optimistic Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/OptimisticMono_W_TextRegular.woff2") format("woff2");
-}
-:where(html) {
-  font-family: "Optimistic", system-ui, sans-serif;
-}
-:where(code, pre, kbd, samp) {
-  font-family: "Optimistic Mono", ui-monospace, monospace;
-}
-</style>
+<head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>FleetControl Pro — Rediseño UX</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FleetControl Pro v6.0</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-:root{
-  --chart-grid:rgba(148,163,184,.1);
-}
-[data-theme="light"]{
-  --bg:#f6f8fc; --bg-2:#eef2f9; --side:#ffffff; --side-2:#f8faff;
-  --card:#ffffff; --card-2:#fcfdff; --card-hover:#f1f5ff;
-  --input:#ffffff; --input-focus:#ffffff;
-  --bd:rgba(15,23,42,.08); --bd-strong:rgba(15,23,42,.14);
-  --tx:#0f172a; --tx-2:#334155; --mut:#64748b; --dim:#475569;
-  --blue:#2563eb; --blue-2:#3b82f6; --blue-glow:rgba(59,130,246,.18);
-  --chart-grid:rgba(15,23,42,.08);
-  --shadow:0 16px 40px rgba(15,23,42,.08),0 4px 12px rgba(15,23,42,.06);
-  --shadow-sm:0 4px 16px rgba(15,23,42,.06);
-}
-:root{
-  --bg:#070c19; --bg-2:#0a1124; --side:#0d162b; --side-2:#0f1d36;
-  --card:#111e38; --card-2:#132240; --card-hover:#16294a;
-  --input:#0a1428; --input-focus:#0e1c36;
-  --bd:rgba(148,163,184,.14); --bd-strong:rgba(148,163,184,.24);
-  --tx:#f1f6ff; --tx-2:#c6d3e7; --mut:#7d90b1; --dim:#a9bbd6;
-  --blue:#5ea2ff; --blue-2:#3b82f6; --blue-glow:rgba(94,162,255,.22);
-  --green:#34d399; --green-bg:rgba(52,211,153,.12);
-  --orange:#fbbf24; --orange-bg:rgba(251,191,36,.12);
-  --red:#fb7185; --red-bg:rgba(251,113,133,.12);
-  --purple:#a78bfa;
-  --radius:18px; --radius-sm:12px; --radius-xs:10px;
-  --shadow:0 16px 40px rgba(0,0,0,.24),0 4px 12px rgba(0,0,0,.18);
-  --shadow-sm:0 8px 20px rgba(0,0,0,.18);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; background: radial-gradient(1200px 600px at 80% -10%, rgba(59,130,246,.18), transparent 60%), radial-gradient(900px 500px at -10% 20%, rgba(16,185,129,.08), transparent 50%), var(--bg); color:var(--tx); min-height:100vh; line-height:1.5; -webkit-font-smoothing:antialiased;}
-button,input,select{font-family:inherit}
-
-/* Sidebar */
-.sidebar{width:280px; background: linear-gradient(180deg, var(--side) 0%, #0a1326 100%); border-right:1px solid var(--bd); position:fixed; top:0; bottom:0; left:0; z-index:20; display:flex; flex-direction:column; padding:28px 16px 16px;}
-.brand{display:flex; align-items:center; gap:12px; padding:0 8px 24px; border-bottom:1px solid var(--bd); margin-bottom:20px;}
-.brand-icon{width:40px; height:40px; border-radius:12px; background: linear-gradient(135deg, var(--blue-2), #7c3aed); display:grid; place-items:center; font-weight:800; font-size:18px; color:white; box-shadow:0 8px 20px rgba(59,130,246,.3);}
-.brand-text{line-height:1.1}
-.brand-text b{display:block; font-size:16px; font-weight:800; letter-spacing:-.03em;}
-.brand-text span{font-size:11px; color:var(--mut); font-weight:600; letter-spacing:.08em; text-transform:uppercase;}
-.nav{display:flex; flex-direction:column; gap:6px; flex:1;}
-.nav-item{display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:12px; color:var(--mut); font-weight:600; font-size:13.5px; cursor:pointer; border:1px solid transparent; transition: all .2s cubic-bezier(.2,.8,.2,1); position:relative; user-select:none;}
-.nav-item .ico{width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background: rgba(148,163,184,.08); font-size:14px; transition: all .2s;}
-.nav-item:hover{background: rgba(148,163,184,.07); color:var(--tx-2); transform: translateX(2px);}
-.nav-item:hover .ico{background: rgba(148,163,184,.14);}
-.nav-item.active{background: linear-gradient(100deg, rgba(59,130,246,.18), rgba(59,130,246,.06)); color:#8cc5ff; border-color: rgba(94,162,255,.22); box-shadow: inset 0 1px 0 rgba(255,255,255,.06);}
-.nav-item.active .ico{background: rgba(94,162,255,.22); color:white; box-shadow:0 0 0 2px rgba(94,162,255,.15);}
-.nav-item.active::before{content:""; position:absolute; left:-16px; top:50%; transform:translateY(-50%); width:3px; height:22px; background:var(--blue); border-radius:0 4px 4px 0; box-shadow:0 0 12px var(--blue);}
-.sidebar-foot{padding:14px 10px; border-top:1px solid var(--bd); margin-top:auto;}
-.sidebar-foot .hint{font-size:11px; color:var(--mut); line-height:1.5;}
-
-/* Main */
-.main{margin-left:280px; min-height:100vh; padding:0;}
-.topbar{position:sticky; top:0; z-index:10; backdrop-filter: blur(18px) saturate(1.2); background: linear-gradient(180deg, rgba(7,12,25,.92), rgba(7,12,25,.72)); border-bottom:1px solid var(--bd); padding:18px 32px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
-.top-left h1{font-size:clamp(22px, 2.2vw, 28px); font-weight:800; letter-spacing:-.04em; line-height:1.1;}
-.top-left p{font-size:13px; color:var(--mut); margin-top:4px;}
-.top-actions{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
-.select-wrap{position:relative;}
-.select-wrap select{appearance:none; min-width:260px; height:44px; padding:0 42px 0 14px; background: var(--input); border:1px solid var(--bd); border-radius:12px; color:var(--tx-2); font-size:13px; font-weight:500; cursor:pointer; transition: all .2s;}
-.select-wrap::after{content:"▾"; position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--mut); pointer-events:none;}
-.select-wrap select:focus{border-color: var(--blue); box-shadow:0 0 0 4px var(--blue-glow); background: var(--input-focus); outline:none;}
-
-.content{padding:28px 32px 40px; max-width:1400px; margin:0 auto;}
-
-.card{background: linear-gradient(165deg, var(--card) 0%, var(--card-2) 100%); border:1px solid var(--bd); border-radius:var(--radius); padding:22px; margin-bottom:20px; box-shadow: var(--shadow-sm); position:relative; overflow:hidden; transition: border-color .2s, transform .2s;}
-.card::before{content:""; position:absolute; inset:0 0 auto 0; height:1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent); pointer-events:none;}
-.card:hover{border-color: var(--bd-strong);}
-.card-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;}
-.card-title{display:flex; align-items:center; gap:10px; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--tx-2);}
-.card-title .dot{width:8px; height:8px; border-radius:50%; background:var(--blue); box-shadow:0 0 12px var(--blue-glow);}
-.card-title.orange .dot{background:var(--orange)} .card-title.green .dot{background:var(--green)} .card-title.red .dot{background:var(--red)} .card-title.purple .dot{background:var(--purple)}
-
-.metrics{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:14px; margin-bottom:22px;}
-.metric{background: linear-gradient(165deg, var(--card) 0%, #101d35 100%); border:1px solid var(--bd); border-radius:16px; padding:18px 18px 16px; position:relative; overflow:hidden; transition: all .22s cubic-bezier(.2,.8,.2,1);}
-.metric::after{content:""; position:absolute; width:120px; height:120px; right:-36px; top:-44px; border-radius:50%; background: radial-gradient(circle, var(--glow, rgba(94,162,255,.14)), transparent 70%); pointer-events:none;}
-.metric:hover{transform: translateY(-3px); border-color: rgba(148,163,184,.22); box-shadow: var(--shadow);}
-.metric-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
-.metric-icon{width:36px; height:36px; border-radius:10px; display:grid; place-items:center; font-size:16px;}
-.metric h3{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--mut); font-weight:700;}
-.mv{font-size:clamp(20px,1.9vw,26px); font-weight:800; letter-spacing:-.04em; line-height:1.2; color:var(--tx);}
-.ms{font-size:12px; color:var(--mut); margin-top:6px; line-height:1.4;}
-.metric.b1{--glow:rgba(94,162,255,.18); border-top:2px solid var(--blue)} .metric.b1 .metric-icon{background:rgba(94,162,255,.14); color:var(--blue)}
-.metric.b2{--glow:rgba(52,211,153,.14); border-top:2px solid var(--green)} .metric.b2 .metric-icon{background:var(--green-bg); color:var(--green)}
-.metric.b3{--glow:rgba(251,191,36,.14); border-top:2px solid var(--orange)} .metric.b3 .metric-icon{background:var(--orange-bg); color:var(--orange)}
-.metric.b4{--glow:rgba(167,139,250,.14); border-top:2px solid var(--purple)} .metric.b4 .metric-icon{background:rgba(167,139,250,.14); color:var(--purple)}
-
-.grid2{display:grid; grid-template-columns: 1.7fr .9fr; gap:18px;}
-@media(max-width:1100px){.grid2{grid-template-columns:1fr}}
-
-.part{display:flex; gap:12px; align-items:center; padding:14px; border-radius:12px; background: rgba(6,15,29,.5); border:1px solid rgba(148,163,184,.08); margin-bottom:10px; transition: all .15s;}
-.part:hover{background: rgba(10,20,40,.7); border-color: rgba(148,163,184,.14);}
-.part.warning{border-color: rgba(251,191,36,.28); background: rgba(251,191,36,.06)} .part.danger{border-color: rgba(251,113,133,.28); background: rgba(251,113,133,.06)}
-.pi{font-size:22px; width:36px; height:36px; display:grid; place-items:center; background: rgba(148,163,184,.08); border-radius:10px;}
-.pb{flex:1; min-width:0} .pb h4{font-size:13.5px; font-weight:600; margin-bottom:6px;}
-.bar{height:8px; background:#1e2d4a; border-radius:999px; overflow:hidden;} .fill{height:100%; border-radius:999px; background: linear-gradient(90deg, var(--blue-2), var(--blue)); box-shadow:0 0 10px rgba(94,162,255,.25);}
-.pt{font-size:11px; color:var(--mut); margin-top:6px;}
-
-.alert{padding:14px 0; border-bottom:1px solid var(--bd); font-size:13px; display:flex; gap:12px; align-items:flex-start;}
-.alert:last-child{border:0} .alert span{display:block; font-size:12px; color:var(--mut); margin-top:3px; line-height:1.4;}
-.alert::before{content:"🔔"; width:28px; height:28px; background: rgba(148,163,184,.08); border-radius:8px; display:grid; place-items:center; font-size:12px; flex-shrink:0;}
-
-.form{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:16px; align-items:end;}
-label{display:block; font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#8ea1be; margin-bottom:8px;}
-input, select{width:100%; height:44px; background: var(--input); border:1px solid var(--bd); border-radius:12px; padding:0 14px; color:var(--tx-2); font-size:13.5px; outline:none; transition: all .2s;}
-input:hover, select:hover{border-color: var(--bd-strong);}
-input:focus, select:focus{border-color: var(--blue); background: var(--input-focus); box-shadow:0 0 0 4px var(--blue-glow);}
-input::placeholder{color:var(--mut);}
-
-.btn{height:44px; padding:0 18px; border-radius:12px; border:0; font-weight:700; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px; transition: all .18s cubic-bezier(.2,.8,.2,1); white-space:nowrap;}
-.btn.primary{background: linear-gradient(135deg, #4a8cff, #2563eb); color:white; box-shadow:0 8px 18px rgba(37,99,235,.22);}
-.btn.primary:hover{filter:brightness(1.08); transform: translateY(-1px); box-shadow:0 12px 24px rgba(37,99,235,.28);}
-.btn.green{background: linear-gradient(135deg, #34d399, #059669); color:white; box-shadow:0 8px 18px rgba(16,185,129,.18);}
-.btn.ghost{background: rgba(148,163,184,.08); border:1px solid var(--bd); color:var(--tx-2); box-shadow:none;}
-.btn.ghost:hover{background: rgba(148,163,184,.12); border-color: var(--bd-strong);}
-.btn.red{background: var(--red-bg); color:var(--red); border:1px solid rgba(251,113,133,.18);}
-.btn.sm{height:32px; padding:0 12px; font-size:12px; border-radius:9px;}
-.btn:active{transform: translateY(0) scale(.98);}
-
-.tw{border:1px solid var(--bd); border-radius:14px; overflow:hidden; background: rgba(6,15,29,.4);}
-table{width:100%; border-collapse:collapse; font-size:12.5px; min-width:620px;}
-th{text-align:left; padding:14px 14px; color:#8ea1be; font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; background: rgba(5,13,26,.6); border-bottom:1px solid var(--bd); white-space:nowrap; position:sticky; top:0;}
-td{padding:13px 14px; border-bottom:1px solid var(--bd); color:var(--dim);} tbody tr:last-child td{border-bottom:0} tbody tr{transition: background .15s;} tbody tr:hover{background: rgba(94,162,255,.05);}
-
-.gallery{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:14px;}
-.vc{background: linear-gradient(165deg, var(--card) 0%, #0f1d36 100%); border:1px solid var(--bd); border-radius:16px; padding:18px; cursor:pointer; transition: all .22s cubic-bezier(.2,.8,.2,1); position:relative; overflow:hidden;}
-.vc:hover{transform: translateY(-3px); border-color: rgba(94,162,255,.3); box-shadow: var(--shadow);}
-.vc.sel{border-color: rgba(94,162,255,.6); box-shadow:0 0 0 3px rgba(94,162,255,.14), var(--shadow);}
-.vc h4{font-size:15px; font-weight:700; letter-spacing:-.02em;} .vc small{color:var(--mut); font-size:12px;} .vc .row{display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:12px; color:var(--dim);}
-
-.pill{padding:5px 10px; border-radius:999px; font-size:11px; font-weight:700; border:1px solid transparent; display:inline-flex; align-items:center; gap:4px;}
-.ok{background:var(--green-bg); color:#6ee7b7; border-color: rgba(52,211,153,.16)} .warn{background:var(--orange-bg); color:#fcd34d; border-color: rgba(251,191,36,.16)} .crit{background:var(--red-bg); color:#fda4af; border-color: rgba(251,113,133,.16)}
-
-.empty{text-align:center; padding:40px 20px; color:var(--mut);} .empty .big{font-size:40px; margin-bottom:12px; opacity:.8;} .empty p{font-size:13px; max-width:360px; margin:8px auto 0; line-height:1.5;}
-
-.view{display:none; animation: fadeIn .28s cubic-bezier(.2,.8,.2,1);} .view.active{display:block;}
-@keyframes fadeIn{from{opacity:0; transform: translateY(8px);} to{opacity:1; transform: translateY(0);}}
-
-#toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(12px); background:#0f1f3a; border:1px solid rgba(255,255,255,.12); color:white; padding:12px 18px; border-radius:12px; font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition: all .32s cubic-bezier(.2,.8,.2,1); z-index:99; box-shadow: var(--shadow); max-width:calc(100vw - 24px); text-align:center;}
-#toast.show{opacity:1; transform:translateX(-50%) translateY(0);} #toast.err{background:#3a1220; border-color: rgba(251,113,133,.25); color:#fecdd3;}
-
-.rtip{padding:12px 0; border-bottom:1px solid var(--bd); font-size:13px; color:var(--dim); line-height:1.5;} .rtip:last-child{border:0}
-
+:root{--bg:#0a0f1e;--side:#111827;--card:#1a2236;--input:#0f172a;--bd:rgba(148,163,184,.15);--tx:#f1f5f9;--mut:#64748b;--dim:#94a3b8;--blue:#3b82f6;--green:#10b981;--orange:#f59e0b;--red:#ef4444}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
+body{background:var(--bg);color:var(--tx);min-height:100vh}
+.sidebar{width:240px;background:var(--side);padding:22px 14px;position:fixed;top:0;bottom:0;border-right:1px solid var(--bd);z-index:10}
+.logo{font-size:19px;font-weight:800;padding:0 10px 20px;border-bottom:1px solid var(--bd);margin-bottom:18px}
+.logo small{display:block;font-size:11px;color:var(--mut);font-weight:500}
+.nav{display:flex;flex-direction:column;gap:5px}
+.nav-item{padding:12px 14px;border-radius:10px;color:var(--dim);font-weight:600;font-size:14px;cursor:pointer;border:1px solid transparent}
+.nav-item.active{background:rgba(59,130,246,.12);color:var(--blue);border-color:rgba(59,130,246,.25)}
+.main{margin-left:240px;padding:26px;max-width:1200px}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:22px}
+.top h2{font-size:22px}.top p{color:var(--mut);font-size:13px;margin-top:3px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+select,input{background:var(--input);border:1px solid var(--bd);color:var(--tx);padding:10px;border-radius:8px;font-size:14px;width:100%;outline:none}
+select:focus,input:focus{border-color:var(--blue)}
+.actions select{width:auto;min-width:220px}
+.btn{background:var(--blue);color:#fff;border:0;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px}
+.btn.green{background:var(--green)}.btn.ghost{background:transparent;border:1px solid var(--bd);color:var(--dim)}.btn.red{background:rgba(239,68,68,.15);color:var(--red)}
+.btn.sm{padding:6px 10px;font-size:11px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;margin-bottom:20px}
+.ct{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:14px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px}
+.metric{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;border-top:3px solid var(--blue)}
+.metric:nth-child(2){border-top-color:var(--green)}.metric:nth-child(3){border-top-color:var(--orange)}.metric:nth-child(4){border-top-color:#8b5cf6}
+.metric h3{font-size:11px;color:var(--mut);text-transform:uppercase;margin-bottom:8px}
+.mv{font-size:22px;font-weight:800}.ms{font-size:12px;color:var(--mut);margin-top:4px}
+.grid2{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.part{display:flex;gap:12px;align-items:center;background:rgba(15,23,42,.6);padding:12px;border-radius:12px;margin-bottom:10px;border:1px solid transparent}
+.part.warning{border-color:rgba(245,158,11,.4)}.part.danger{border-color:rgba(239,68,68,.5)}
+.pi{font-size:22px}.pb{flex:1;min-width:0}.pb h4{font-size:14px;margin-bottom:6px}
+.bar{height:6px;background:#334155;border-radius:4px;overflow:hidden}.fill{height:100%;border-radius:4px}
+.pt{font-size:11px;color:var(--mut);margin-top:5px}
+.alert{padding:9px 0;border-bottom:1px solid var(--bd);font-size:13px}.alert:last-child{border:0}.alert span{display:block;font-size:12px;color:var(--mut)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end}
+label{display:block;font-size:11px;color:var(--mut);margin-bottom:4px;text-transform:uppercase}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+th{text-align:left;padding:10px;color:var(--mut);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--bd)}
+td{padding:11px 10px;border-bottom:1px solid var(--bd);color:var(--dim)}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.vc{background:rgba(15,23,42,.6);border:1px solid var(--bd);border-radius:12px;padding:16px;cursor:pointer}
+.vc.sel{border-color:var(--blue)}.vc h4{font-size:15px}.vc small{color:var(--mut)}
+.vc .row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:var(--dim)}
+.pill{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.ok{background:rgba(16,185,129,.12);color:var(--green)}.warn{background:rgba(245,158,11,.12);color:var(--orange)}.crit{background:rgba(239,68,68,.12);color:var(--red)}
+.empty{text-align:center;color:var(--mut);padding:28px;font-size:14px}
+.view{display:none}.view.active{display:block}
+#toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s;z-index:99}
+#toast.show{opacity:1}#toast.err{background:var(--red)}
 @media(max-width:900px){
-  .sidebar{width:100%; top:auto; bottom:0; height:auto; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); flex-direction:row; border-right:0; border-top:1px solid var(--bd); backdrop-filter: blur(18px); background: rgba(13,22,43,.92);}
-  .brand, .sidebar-foot{display:none} .nav{flex-direction:row; gap:4px;} .nav-item{flex:1; flex-direction:column; gap:4px; padding:8px 4px; font-size:10px; border-radius:10px;} .nav-item .ico{width:24px; height:24px; font-size:12px;} .nav-item.active::before{display:none} .nav-item.active{box-shadow: none;}
-  .main{margin-left:0; padding-bottom:88px;} .topbar{padding:16px 16px;} .content{padding:16px 14px 24px;} .select-wrap select{min-width:100%; width:100%;} .top-actions{width:100%;} .top-actions .select-wrap{flex:1;}
+.sidebar{width:100%;top:auto;bottom:0;height:auto;padding:6px;border-right:0;border-top:1px solid var(--bd)}
+.logo{display:none}.nav{flex-direction:row}.nav-item{flex:1;text-align:center;padding:10px 2px;font-size:12px}
+.main{margin-left:0;padding:16px 14px 90px}.grid2{grid-template-columns:1fr}.actions,.actions select{width:100%}}
+button:focus-visible,.nav-item:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.rtip{padding:8px 0;border-bottom:1px solid var(--bd);font-size:13px;color:var(--dim)}.rtip:last-child{border:0}
+@media print{.sidebar,.top .actions,.no-print,#toast{display:none!important}
+body{background:#fff;color:#000}.main{margin:0;padding:0;max-width:none}
+.card,.metric{background:#fff!important;border:1px solid #ccc;color:#000;break-inside:avoid}
+.mv,td,th,.ms,.ct,h2,p,.rtip,.pt{color:#000!important}}
+
+/* ===== FleetControl Pro v5.2 · Rediseño visual ===== */
+:root{
+  --bg:#080d19;
+  --side:#0d1526;
+  --card:#111d31;
+  --input:#0b1425;
+  --bd:rgba(148,163,184,.16);
+  --tx:#f3f7ff;
+  --mut:#8292ad;
+  --dim:#b7c4d8;
+  --blue:#58a6ff;
+  --green:#36d399;
+  --orange:#fbbf24;
+  --red:#fb7185;
+  --glow:rgba(88,166,255,.16);
 }
-@media print{.sidebar, .topbar .no-print, #toast{display:none!important} body{background:white; color:black} .main{margin:0} .card,.metric{background:white!important; border:1px solid #ddd!important; color:black; box-shadow:none!important}}
+html{scroll-behavior:smooth}
+body{
+  background:
+    radial-gradient(ellipse at 78% -12%,rgba(37,99,235,.16),transparent 36%),
+    radial-gradient(ellipse at 5% 28%,rgba(16,185,129,.06),transparent 30%),
+    var(--bg);
+  letter-spacing:.01em;
+}
+.sidebar{
+  background:linear-gradient(180deg,#101c31 0%,#0b1323 100%);
+  box-shadow:10px 0 40px rgba(0,0,0,.14);
+  padding:24px 14px;
+}
+.logo{
+  display:flex;align-items:center;gap:9px;
+  font-size:18px;letter-spacing:-.035em;
+  padding:4px 10px 22px;margin-bottom:22px;
+}
+.logo::first-letter{color:var(--blue)}
+.logo small{letter-spacing:.08em;text-transform:uppercase;color:#7e91b0;margin-top:5px}
+.nav{gap:7px}
+.nav-item{
+  position:relative;display:flex;align-items:center;gap:9px;
+  padding:13px 14px;border-radius:12px;
+  transition:background .18s ease,color .18s ease,border-color .18s ease,transform .18s ease;
+}
+.nav-item:hover{background:rgba(148,163,184,.07);color:var(--tx);transform:translateX(2px)}
+.nav-item.active{
+  color:#8cc5ff;
+  background:linear-gradient(100deg,rgba(59,130,246,.20),rgba(59,130,246,.06));
+  border-color:rgba(88,166,255,.24);
+  box-shadow:inset 3px 0 0 var(--blue);
+}
+.main{max-width:1480px;padding:32px clamp(16px,2.5vw,38px)}
+.top{
+  position:relative;padding:4px 0 20px;margin-bottom:22px;
+  border-bottom:1px solid rgba(148,163,184,.12);
+}
+.top h2{font-size:clamp(23px,2.4vw,30px);letter-spacing:-.045em;font-weight:800}
+.top p{color:var(--mut);font-size:13px;margin-top:6px}
+.actions{gap:8px}
+select,input{
+  min-height:42px;
+  background:rgba(7,16,31,.76);
+  border:1px solid rgba(148,163,184,.2);
+  border-radius:10px;
+  padding:11px 12px;
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+select:hover,input:hover{border-color:rgba(148,163,184,.38)}
+select:focus,input:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(88,166,255,.12);
+  background:#0b172b;
+}
+.actions select{min-width:240px}
+.btn{
+  min-height:41px;padding:11px 16px;border-radius:10px;
+  background:linear-gradient(135deg,#3987f6,#2563eb);
+  box-shadow:0 5px 14px rgba(37,99,235,.17);
+  transition:transform .16s ease,filter .16s ease,box-shadow .16s ease;
+}
+.btn:hover{filter:brightness(1.09);transform:translateY(-1px);box-shadow:0 8px 20px rgba(37,99,235,.22)}
+.btn:active{transform:translateY(0)}
+.btn.green{background:linear-gradient(135deg,#34d399,#059669);box-shadow:0 5px 14px rgba(16,185,129,.14)}
+.btn.ghost{box-shadow:none;background:rgba(148,163,184,.045);border-color:rgba(148,163,184,.22);color:#c1cee1}
+.btn.ghost:hover{background:rgba(148,163,184,.1);border-color:rgba(148,163,184,.36)}
+.btn.red{box-shadow:none}
+.card{
+  position:relative;overflow:hidden;
+  background:linear-gradient(145deg,rgba(19,31,52,.96),rgba(14,24,42,.96));
+  border:1px solid rgba(148,163,184,.14);
+  border-radius:18px;padding:clamp(16px,2vw,24px);margin-bottom:20px;
+  box-shadow:0 12px 32px rgba(0,0,0,.12);
+}
+.card > .ct{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.12em;color:#9badc7;margin-bottom:18px}
+.card > .ct::before{content:"";display:inline-block;width:4px;height:15px;border-radius:4px;background:var(--blue);box-shadow:0 0 12px rgba(88,166,255,.3)}
+.metrics{gap:13px}
+.metric{
+  position:relative;overflow:hidden;
+  background:linear-gradient(150deg,rgba(22,37,61,.98),rgba(14,25,43,.98));
+  border:1px solid rgba(148,163,184,.14);
+  border-top:1px solid rgba(148,163,184,.14);
+  border-radius:16px;padding:19px;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.metric::after{
+  content:"";position:absolute;width:100px;height:100px;right:-40px;top:-48px;
+  border-radius:50%;background:var(--glow);filter:blur(2px);pointer-events:none;
+}
+.metric:hover{transform:translateY(-2px);border-color:rgba(88,166,255,.25);box-shadow:0 10px 24px rgba(0,0,0,.15)}
+.metric:nth-child(1){--glow:rgba(88,166,255,.12);border-top:2px solid #58a6ff}
+.metric:nth-child(2){--glow:rgba(54,211,153,.10);border-top:2px solid var(--green)}
+.metric:nth-child(3){--glow:rgba(251,191,36,.10);border-top:2px solid var(--orange)}
+.metric:nth-child(4){--glow:rgba(167,139,250,.12);border-top:2px solid #a78bfa}
+.metric h3{font-size:10px;letter-spacing:.09em;color:#91a2bd;line-height:1.5}
+.mv{position:relative;font-size:clamp(21px,2vw,27px);letter-spacing:-.04em;font-weight:800;line-height:1.25;overflow-wrap:anywhere}
+.ms{color:#8799b5;font-size:12px;line-height:1.5}
+.grid2{gap:18px}
+.part{background:rgba(6,15,29,.42);border:1px solid rgba(148,163,184,.09);padding:14px;border-radius:13px}
+.part.warning{border-color:rgba(251,191,36,.28);background:rgba(251,191,36,.045)}
+.part.danger{border-color:rgba(251,113,133,.3);background:rgba(251,113,133,.045)}
+.bar{height:7px;background:#253650}
+.fill{box-shadow:0 0 10px rgba(88,166,255,.15)}
+.form{gap:14px}
+label{font-size:10px;font-weight:700;letter-spacing:.07em;color:#9aabc4;margin-bottom:7px}
+.tw{border:1px solid rgba(148,163,184,.12);border-radius:12px}
+table{font-size:12px;min-width:590px}
+th{background:rgba(5,13,26,.52);color:#9aabc4;letter-spacing:.07em;padding:13px 12px;white-space:nowrap}
+td{padding:13px 12px;color:#c0cce0}
+tbody tr{transition:background .15s ease}
+tbody tr:hover{background:rgba(88,166,255,.045)}
+tbody tr:last-child td{border-bottom:0}
+.gallery{gap:15px}
+.vc{
+  position:relative;background:linear-gradient(145deg,rgba(23,39,64,.94),rgba(13,24,42,.94));
+  border:1px solid rgba(148,163,184,.16);border-radius:16px;padding:19px;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.vc:hover{transform:translateY(-3px);border-color:rgba(88,166,255,.38);box-shadow:0 12px 28px rgba(0,0,0,.18)}
+.vc.sel{border-color:rgba(88,166,255,.65);box-shadow:0 0 0 2px rgba(88,166,255,.1),0 10px 25px rgba(0,0,0,.15)}
+.vc h4{font-size:16px;letter-spacing:-.02em}
+.vc small{color:#91a2bd}
+.pill{padding:5px 10px;border:1px solid transparent}
+.ok{background:rgba(54,211,153,.1);color:#5ee6b2;border-color:rgba(54,211,153,.14)}
+.warn{background:rgba(251,191,36,.1);color:#fcd36b;border-color:rgba(251,191,36,.14)}
+.crit{background:rgba(251,113,133,.1);color:#fda4af;border-color:rgba(251,113,133,.14)}
+.empty{padding:36px 18px;color:#8193ae}
+.alert{padding:13px 0;line-height:1.5}
+.alert span{margin-top:3px;line-height:1.45}
+.rtip{padding:11px 0;line-height:1.5}
+#toast{
+  bottom:24px;background:#059669;border:1px solid rgba(255,255,255,.15);
+  border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.28);padding:13px 18px;
+  max-width:calc(100vw - 28px);text-align:center;
+}
+button:focus-visible,.nav-item:focus-visible,.vc:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+@media(min-width:901px){
+  .sidebar{width:252px}
+  .main{margin-left:252px}
+}
+@media(max-width:900px){
+  .sidebar{
+    height:auto;min-height:68px;padding:7px 8px calc(7px + env(safe-area-inset-bottom));
+    background:rgba(10,19,35,.96);backdrop-filter:blur(18px);
+    box-shadow:0 -10px 30px rgba(0,0,0,.18);
+  }
+  .nav{justify-content:space-around;gap:4px}
+  .nav-item{
+    flex:1;min-width:0;justify-content:center;white-space:nowrap;
+    padding:12px 4px;border-radius:10px;font-size:11px;
+  }
+  .nav-item:hover{transform:none}
+  .nav-item.active{box-shadow:inset 0 2px 0 var(--blue)}
+  .main{padding:20px 13px calc(100px + env(safe-area-inset-bottom))}
+  .top{align-items:flex-start;flex-direction:column;padding-bottom:17px;gap:15px}
+  .top h2{font-size:25px}
+  .top .actions,.actions,.actions select{width:100%}
+  .actions{display:grid;grid-template-columns:1fr}
+  .actions select{min-width:0}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .metric{padding:15px 13px;border-radius:14px}
+  .metric h3{font-size:9px}
+  .mv{font-size:clamp(18px,5vw,23px)}
+  .ms{font-size:11px}
+  .card{border-radius:15px;margin-bottom:14px;padding:16px}
+  .grid2{grid-template-columns:minmax(0,1fr);gap:0}
+  .form{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .form > div{min-width:0}
+  .form input,.form select{min-width:0}
+  .form button{width:100%}
+  .gallery{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  #toast{bottom:calc(80px + env(safe-area-inset-bottom))}
+}
+@media(max-width:420px){
+  .nav-item{font-size:10px;padding:11px 1px}
+  .main{padding-left:10px;padding-right:10px}
+  .form{grid-template-columns:minmax(0,1fr)}
+  .metrics{gap:8px}
+  .metric{padding:13px 11px}
+  .mv{font-size:19px}
+  .gallery{grid-template-columns:minmax(0,1fr)}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+@media print{
+  body{background:#fff!important}
+  .card,.metric,.vc{box-shadow:none!important;border-radius:5px!important}
+}
 
-/* Theme toggle */
-.theme-toggle{width:44px; height:44px; border-radius:12px; border:1px solid var(--bd); background:var(--input); display:grid; place-items:center; cursor:pointer; font-size:16px; transition: all .2s;}
-.theme-toggle:hover{border-color: var(--bd-strong); transform: translateY(-1px);}
-.chart-wrap{position:relative; width:100%; height:240px; margin-top:12px;}
-.chart-wrap canvas{width:100% !important; height:100% !important;}
-.search-bar{display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;}
-.search-bar input{flex:1; min-width:200px; height:40px; padding-left:40px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%237d90b1" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-3.5-3.5"/></svg>'); background-repeat:no-repeat; background-position:14px center;}
-.filter-chips{display:flex; gap:6px; flex-wrap:wrap;}
-.chip{padding:6px 12px; border-radius:999px; font-size:12px; font-weight:600; border:1px solid var(--bd); background:var(--input); color:var(--mut); cursor:pointer; transition: all .15s;}
-.chip.active{background:var(--blue); color:white; border-color:var(--blue); box-shadow:0 4px 12px var(--blue-glow);}
-.kbd{font-size:10px; background:var(--bd); padding:2px 6px; border-radius:4px; font-weight:700;}
 
-
-.report-grid{ }
-@media(max-width:900px){ .report-grid{grid-template-columns:1fr !important;} }
-@media print{ #reportChartsCard{break-inside:avoid; page-break-inside:avoid;} .chart-wrap{height:220px !important;} }
+/* FleetControl Pro v6.0 · panel de rentabilidad */
+.analytics-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+.analytics-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(240px,1fr);gap:14px}
+.chart-panel{min-width:0;border:1px solid rgba(148,163,184,.12);border-radius:14px;padding:17px;background:rgba(5,13,26,.34)}
+.chart-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:20px;color:#dbe7f8;font-size:13px;font-weight:700}
+.chart-heading small{font-size:10px;color:#8193ae;font-weight:500}
+.bar-chart{height:210px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));align-items:end;gap:clamp(6px,1.4vw,14px);padding-top:8px}
+.bar-month{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.bar-track{width:min(100%,34px);height:145px;display:flex;align-items:flex-end;border-radius:8px 8px 3px 3px;background:rgba(148,163,184,.055);overflow:hidden}
+.bar-column{width:100%;min-height:3px;border-radius:7px 7px 2px 2px;background:linear-gradient(180deg,#60a5fa,#2563eb);transition:height .3s ease}
+.bar-value{font-size:9px;color:#91a4c0;max-width:100%;overflow-wrap:anywhere;text-align:center}
+.bar-label{font-size:10px;color:#91a4c0}
+.split-chart{display:flex;flex-direction:column;gap:17px}
+.split-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center}
+.split-name{font-size:12px;color:#afbed3}
+.split-amount{font-size:12px;color:#edf4ff;font-weight:700;text-align:right}
+.split-track{grid-column:1/-1;height:7px;border-radius:99px;background:#253650;overflow:hidden}
+.split-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#60a5fa,#2563eb)}
+.split-row.service .split-fill{background:linear-gradient(90deg,#34d399,#059669)}
+.analytics-note{margin-top:15px;font-size:11px;color:#8193ae;line-height:1.55}
+@media(max-width:900px){
+ .analytics-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .analytics-grid{grid-template-columns:minmax(0,1fr)}
+ .bar-chart{gap:8px}
+ .bar-track{height:125px}
+}
+@media(max-width:420px){
+ .chart-panel{padding:13px}
+ .bar-value{font-size:8px}
+}
 
 </style>
 </head>
 <body>
-<div class="sidebar" role="navigation" aria-label="Principal">
-  <div class="brand">
-    <div class="brand-icon">F</div>
-    <div class="brand-text"><b>FleetControl</b><span>Pro v5.3 • UX</span></div>
-  </div>
-  <div class="nav" id="nav">
-    <div class="nav-item active" data-view="dashboard"><span class="ico">📊</span>Dashboard</div>
-    <div class="nav-item" data-view="vehicles"><span class="ico">🚗</span>Vehículos</div>
-    <div class="nav-item" data-view="fuel"><span class="ico">⛽</span>Combustible</div>
-    <div class="nav-item" data-view="maintenance"><span class="ico">🔧</span>Mantenimiento</div>
-    <div class="nav-item" data-view="reports"><span class="ico">📄</span>Reportes</div>
-  </div>
-  <div class="sidebar-foot"><div class="hint">Tus datos se guardan localmente. Exportá respaldo seguido.<br><br>💡 Tip: usá tanque lleno para un consumo real.</div></div>
+<div class="sidebar">
+  <div class="logo">🚀 FleetControl<small>Pro v6.0 · Rentabilidad</small></div>
+  <nav class="nav">
+    <div class="nav-item active" data-view="dashboard">📊 Panel</div>
+    <div class="nav-item" data-view="vehicles">🚙 Vehículos</div>
+    <div class="nav-item" data-view="fuel">⛽ Combustible</div>
+    <div class="nav-item" data-view="maintenance">🛠️ Servicio</div>
+    <div class="nav-item" data-view="reports">📑 Reportes</div>
+  </nav>
 </div>
 
 <div class="main">
-  <div class="topbar">
-    <div class="top-left">
-      <h1 id="topTitle">Dashboard</h1>
-      <p id="topSub">Resumen operativo de tu flota</p>
-    </div>
-    <div class="top-actions">
-      <div class="select-wrap"><select id="vsel"></select></div>
-      <button class="theme-toggle" id="themeToggle" title="Cambiar tema">🌙</button>
+  <div class="top">
+    <div><h2 id="vt"></h2><p id="vs"></p></div>
+    <div class="actions">
+      <select id="vsel"></select>
     </div>
   </div>
 
-  <div class="content">
-  <!-- DASHBOARD -->
+  <!-- PANEL -->
   <div id="view-dashboard" class="view active">
     <div class="metrics">
-      <div class="metric b1"><div class="metric-top"><h3>Kilometraje</h3><div class="metric-icon">📍</div></div><div class="mv" id="m1">—</div><div class="ms" id="m1s"></div></div>
-      <div class="metric b2"><div class="metric-top"><h3>Consumo</h3><div class="metric-icon">⛽</div></div><div class="mv" id="m2">—</div><div class="ms" id="m2s"></div></div>
-      <div class="metric b3"><div class="metric-top"><h3>Gasto pagado</h3><div class="metric-icon">💸</div></div><div class="mv" id="m3">—</div><div class="ms" id="m3s"></div></div>
-      <div class="metric b4"><div class="metric-top"><h3>Costo por km</h3><div class="metric-icon">📏</div></div><div class="mv" id="m4">—</div><div class="ms" id="m4s"></div></div>
+      <div class="metric"><h3>📍 Kilometraje</h3><div class="mv" id="m1">—</div><div class="ms" id="m1s"></div></div>
+      <div class="metric"><h3>⛽ Consumo</h3><div class="mv" id="m2">—</div><div class="ms" id="m2s"></div></div>
+      <div class="metric"><h3>💸 Gasto pagado</h3><div class="mv" id="m3">—</div><div class="ms" id="m3s"></div></div>
+      <div class="metric"><h3>📏 Costo por km</h3><div class="mv" id="m4">—</div><div class="ms" id="m4s"></div></div>
     </div>
-    <div class="card">
-      <div class="card-head"><div class="card-title"><span class="dot"></span>Resumen del mes actual</div></div>
+    <div class="card" id="monthSummary">
+      <div class="ct">📅 Resumen del mes actual</div>
       <div class="metrics" style="margin-bottom:0">
-        <div class="metric b2"><h3>Combustible del mes</h3><div class="mv" id="monthFuel">—</div><div class="ms" id="monthFuelSub"></div></div>
-        <div class="metric b3"><h3>Servicios y otros</h3><div class="mv" id="monthService">—</div><div class="ms">Registrados este mes</div></div>
-        <div class="metric b4"><h3>Total del mes</h3><div class="mv" id="monthTotal">—</div><div class="ms" id="monthTotalSub"></div></div>
+        <div class="metric"><h3>Combustible del mes</h3><div class="mv" id="monthFuel">—</div><div class="ms" id="monthFuelSub"></div></div>
+        <div class="metric"><h3>Servicios y otros</h3><div class="mv" id="monthService">—</div><div class="ms">Registrados este mes</div></div>
+        <div class="metric"><h3>Total del mes</h3><div class="mv" id="monthTotal">—</div><div class="ms" id="monthTotalSub"></div></div>
       </div>
     </div>
+
+    <div class="card" id="profitAnalytics">
+      <div class="ct">📈 Análisis y rentabilidad</div>
+      <div class="metrics analytics-metrics" style="margin-bottom:16px">
+        <div class="metric"><h3>COSTO ESTIMADO POR KM</h3><div class="mv" id="costPerKm">—</div><div class="ms">Según cargas y odómetro</div></div>
+        <div class="metric"><h3>PROMEDIO POR CARGA</h3><div class="mv" id="avgFuelLoad">—</div><div class="ms" id="avgFuelLoadSub">Cargas registradas</div></div>
+        <div class="metric"><h3>DISTANCIA REGISTRADA</h3><div class="mv" id="trackedKm">—</div><div class="ms">Entre cargas de combustible</div></div>
+        <div class="metric"><h3>GASTO TOTAL ACUMULADO</h3><div class="mv" id="totalOperatingCost">—</div><div class="ms">Combustible + servicios</div></div>
+      </div>
+      <div class="analytics-grid">
+        <div class="chart-panel">
+          <div class="chart-heading"><span>Gastos de los últimos 6 meses</span><small>Gs.</small></div>
+          <div id="expenseChart" class="bar-chart" role="img" aria-label="Gráfico de gastos mensuales"></div>
+        </div>
+        <div class="chart-panel">
+          <div class="chart-heading"><span>Distribución de gastos</span><small>Acumulado</small></div>
+          <div id="expenseSplit" class="split-chart"></div>
+        </div>
+      </div>
+      <p class="analytics-note">Los importes se calculan con los registros guardados para el vehículo seleccionado. El costo por km es orientativo y no equivale a una medición exacta del combustible consumido.</p>
+    </div>
     <div class="card">
-      <div class="card-head"><div class="card-title green"><span class="dot"></span>Actualizar odómetro</div></div>
+      <div class="ct">Actualizar odómetro</div>
       <form id="fOdo" class="form">
-        <div><label>Kilometraje actual</label><input type="number" id="odoKm" min="0" step="1" placeholder="Ej: 45230" required></div>
-        <button class="btn primary" type="submit">Guardar km</button>
+        <div><label>Kilometraje actual</label><input type="number" id="odoKm" min="0" step="1" required></div>
+        <button class="btn" type="submit">Guardar km</button>
       </form>
     </div>
-    <div class="card">
-      <div class="card-head"><div class="card-title"><span class="dot"></span>Evolución de consumo</div><div class="filter-chips" id="chartFilters"><div class="chip active" data-range="all">Todo</div><div class="chip" data-range="30">30d</div><div class="chip" data-range="90">90d</div></div></div>
-      <div class="chart-wrap"><canvas id="chartConsumption"></canvas></div>
-      <div class="ms" style="margin-top:10px;" id="chartLegend">Cada punto es una carga. Azul = L/100km, verde = costo.</div>
-    </div>
     <div class="grid2">
-      <div class="card"><div class="card-head"><div class="card-title"><span class="dot"></span>Desgaste de componentes</div></div><div id="partsA"></div></div>
-      <div class="card"><div class="card-head"><div class="card-title orange"><span class="dot"></span>Alertas inteligentes</div></div><div id="alerts"></div></div>
+      <div class="card"><div class="ct">Desgaste de componentes</div><div id="partsA"></div></div>
+      <div class="card"><div class="ct">🔔 Alertas</div><div id="alerts"></div></div>
     </div>
   </div>
 
-  <!-- VEHICULOS -->
+  <!-- VEHÍCULOS -->
   <div id="view-vehicles" class="view">
     <div class="card">
-      <div class="card-head"><div class="card-title"><span class="dot"></span>Agregar vehículo</div></div>
+      <div class="ct">Agregar vehículo</div>
       <form id="fVeh">
         <div class="form">
-          <div><label>Marca y modelo</label><input id="vName" maxlength="40" placeholder="Ej: Toyota Hilux" required></div>
-          <div><label>Patente / Chapa</label><input id="vPlate" maxlength="12" placeholder="AA1234" required></div>
-          <div><label>Tipo</label><select id="vKind"><option>Auto</option><option>Moto</option></select></div>
+          <div><label>Marca y modelo</label><input id="vName" maxlength="40" required></div>
+          <div><label>Patente / Chapa</label><input id="vPlate" maxlength="12" required></div>
+          <div><label>Tipo de vehículo</label><select id="vKind"><option>Auto</option><option>Moto</option></select></div>
           <div><label>Combustible</label><select id="vType"><option>Nafta</option><option>Diésel</option><option>GNC</option></select></div>
           <div><label>Consumo (L cada 100 km)</label><input type="number" id="vPerf" min="1" step="0.1" placeholder="Ej: 12" required></div>
-          <div><label>Kilometraje actual</label><input type="number" id="vKm" min="0" placeholder="Ej: 12000" required></div>
+          <div><label>Kilometraje actual</label><input type="number" id="vKm" min="0" required></div>
         </div>
-        <button class="btn primary" style="margin-top:18px" type="submit">＋ Agregar vehículo</button>
+        <button class="btn" style="margin-top:14px" type="submit">Agregar vehículo</button>
       </form>
     </div>
-    <div class="card"><div class="card-head"><div class="card-title"><span class="dot"></span>Flota</div><div class="search-bar" style="margin:0"><input id="searchVehicles" placeholder="Buscar por marca o patente..."></div></div><div class="gallery" id="gallery"></div></div>
+    <div class="card"><div class="ct">Flota</div><div class="gallery" id="gallery"></div></div>
     <div class="card">
-      <div class="card-head"><div class="card-title"><span class="dot"></span>Respaldo de datos</div></div>
-      <p class="ms" style="margin-bottom:14px">Tus datos viven en este navegador. Descargá un respaldo con frecuencia para no perderlos.</p>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn primary" id="btnBackup" type="button">💾 Exportar respaldo</button>
+      <div class="ct">Respaldo de datos</div>
+      <p class="ms" style="margin-bottom:12px">Tus datos se guardan solo en este navegador. Descargá un respaldo con frecuencia.</p>
+      <div class="actions">
+        <button class="btn" id="btnBackup" type="button">💾 Exportar respaldo</button>
         <button class="btn ghost" id="btnCsv" type="button">📊 Exportar a Excel (CSV)</button>
         <button class="btn ghost" id="btnRestore" type="button">📂 Importar respaldo</button>
         <input type="file" id="fileRestore" accept="application/json,.json" style="display:none">
@@ -292,48 +408,48 @@ td{padding:13px 14px; border-bottom:1px solid var(--bd); color:var(--dim);} tbod
   <!-- COMBUSTIBLE -->
   <div id="view-fuel" class="view">
     <div class="card">
-      <div class="card-head"><div class="card-title"><span class="dot"></span>Registrar carga</div></div>
+      <div class="ct">Registrar carga</div>
       <form id="fFuel" class="form">
         <div><label>Fecha</label><input type="date" id="fDate" required></div>
         <div><label>Estación</label><input id="fStation" maxlength="40" placeholder="Opcional"></div>
-        <div><label>Precio por litro (Gs.)</label><input type="text" inputmode="decimal" id="fPrice" placeholder="Ej: 7.090"></div>
-        <div><label>Monto pagado (Gs.)</label><input type="text" inputmode="decimal" id="fAmt" placeholder="Ej: 200.000"></div>
-        <div><label>Litros (auto-calculado)</label><input type="text" inputmode="decimal" id="fLit" placeholder="Ej: 28,2"></div>
-        <div><label>Km al cargar</label><input type="number" id="fKm" min="0" required placeholder="Odómetro"></div>
+        <div><label>Precio por litro (Gs.)</label><input type="text" inputmode="decimal" id="fPrice" placeholder="Ej: 7.090" autocomplete="off"></div>
+        <div><label>Monto pagado (Gs.)</label><input type="text" inputmode="decimal" id="fAmt" placeholder="Ej: 20.000" autocomplete="off"></div>
+        <div><label>Litros (se calculan con el monto)</label><input type="text" inputmode="decimal" id="fLit" placeholder="Ej: 2,82" autocomplete="off"></div>
+        <div><label>Km al cargar</label><input type="number" id="fKm" min="0" required></div>
         <div><label>¿Tanque lleno?</label><select id="fFull"><option value="1">Sí, llené el tanque</option><option value="0">No, carga parcial</option><option value="">Sin confirmar</option></select></div>
-        <div id="fHint" class="ms" style="grid-column:1/-1; min-height:16px; padding:6px 0;"></div>
-        <button class="btn primary" id="fSubmit" type="submit">Guardar carga</button>
+        <div id="fHint" class="ms" style="grid-column:1/-1;min-height:16px"></div>
+        <button class="btn" id="fSubmit" type="submit">Guardar carga</button>
         <button class="btn ghost" id="fCancel" type="button" style="display:none">Cancelar</button>
       </form>
     </div>
-    <div class="card"><div class="card-head"><div class="card-title"><span class="dot"></span>Historial de cargas</div><div class="search-bar" style="margin:0"><input id="searchFuel" placeholder="Buscar estación, fecha..."><div class="filter-chips"><div class="chip active" data-f="all">Todas</div><div class="chip" data-f="full">Lleno</div><div class="chip" data-f="partial">Parcial</div></div></div></div><div class="tw" id="fuelTable"></div></div>
+    <div class="card"><div class="ct">Historial de cargas</div><div class="tw" id="fuelTable"></div></div>
   </div>
 
-  <!-- MANTENIMIENTO -->
+  <!-- SERVICIO -->
   <div id="view-maintenance" class="view">
-    <div class="card"><div class="card-head"><div class="card-title"><span class="dot"></span>Estado de componentes</div><span class="ms">Intervalos de referencia: ajustalos según fabricante</span></div><div id="partsM"></div></div>
+    <div class="card"><div class="ct">Estado de componentes (intervalos de referencia: ajustalos según el fabricante)</div><div id="partsM"></div></div>
     <div class="card">
-      <div class="card-head"><div class="card-title green"><span class="dot"></span>Agregar componente</div></div>
+      <div class="ct">Agregar componente</div>
       <form id="fPart" class="form">
         <div><label>Nombre</label><input id="pName" maxlength="40" placeholder="Ej: Correa de distribución" required></div>
-        <div><label>Cambiar cada (km)</label><input type="number" id="pInt" min="1" placeholder="40000" required></div>
+        <div><label>Cambiar cada (km)</label><input type="number" id="pInt" min="1" required></div>
         <div><label>Km desde el último cambio</label><input type="number" id="pUsed" min="0" placeholder="Vacío = no lo sé"></div>
-        <button class="btn primary" type="submit">Agregar</button>
+        <button class="btn" type="submit">Agregar</button>
       </form>
     </div>
     <div class="card">
-      <div class="card-head"><div class="card-title orange"><span class="dot"></span>Registrar servicio o gasto</div></div>
+      <div class="ct">Registrar servicio o gasto</div>
       <form id="fSvc" class="form">
         <div><label>Componente</label><select id="sPart"></select></div>
-        <div><label>Detalle</label><input id="sNote" maxlength="40" placeholder="Ej: Lavado, seguro, multa"></div>
+        <div><label>Detalle (obligatorio si es otro gasto)</label><input id="sNote" maxlength="40" placeholder="Ej: Lavado, seguro, multa"></div>
         <div><label>Fecha</label><input type="date" id="sDate" required></div>
-        <div><label>Km del servicio</label><input type="number" id="sKm" min="0" placeholder="Vacío = actual"></div>
+        <div><label>Km del servicio (vacío = actual)</label><input type="number" id="sKm" min="0"></div>
         <div><label>Taller</label><input id="sShop" maxlength="40" placeholder="Opcional"></div>
-        <div><label>Costo (Gs.)</label><input type="number" id="sCost" min="0" value="0"></div>
-        <button class="btn primary" type="submit">Registrar</button>
+        <div><label>Costo</label><input type="number" id="sCost" min="0" value="0"></div>
+        <button class="btn" type="submit">Registrar</button>
       </form>
     </div>
-    <div class="card"><div class="card-head"><div class="card-title"><span class="dot"></span>Historial de servicios</div><div class="search-bar" style="margin:0"><input id="searchSvc" placeholder="Buscar componente, taller..."></div></div><div class="tw" id="svcTable"></div></div>
+    <div class="card"><div class="ct">Historial de servicios</div><div class="tw" id="svcTable"></div></div>
   </div>
 
   <!-- REPORTES -->
@@ -342,18 +458,10 @@ td{padding:13px 14px; border-bottom:1px solid var(--bd); color:var(--dim);} tbod
       <div class="form">
         <div><label>Alcance</label><select id="rScope"><option value="one">Vehículo seleccionado</option><option value="all">Toda la flota</option></select></div>
         <div><label>Período</label><select id="rPeriod"><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="365">Último año</option><option value="0">Todo el historial</option></select></div>
-        <button class="btn ghost" id="btnPrint" type="button">📄 Imprimir / PDF</button>
-      </div>
-    </div>
-    <div class="card" id="reportChartsCard">
-      <div class="card-head"><div class="card-title"><span class="dot"></span>Análisis visual</div><div class="filter-chips"><div class="chip active" data-rc="6">6 meses</div><div class="chip" data-rc="12">12 meses</div></div></div>
-      <div style="display:grid; grid-template-columns:1.2fr .8fr; gap:18px;" class="report-grid">
-        <div><div class="ms" style="margin-bottom:8px; font-weight:600;">Gasto mensual (Gs.) - Combustible vs Servicios</div><div class="chart-wrap" style="height:260px;"><canvas id="chartMonthly"></canvas></div></div>
-        <div><div class="ms" style="margin-bottom:8px; font-weight:600;">Distribución del gasto</div><div class="chart-wrap" style="height:260px;"><canvas id="chartDonut"></canvas></div><div id="donutLegend" class="ms" style="margin-top:10px;"></div></div>
+        <button class="btn" id="btnPrint" type="button">📄 Imprimir / Guardar como PDF</button>
       </div>
     </div>
     <div id="reportBox"></div>
-  </div>
   </div>
 </div>
 <div id="toast"></div>
@@ -592,14 +700,72 @@ function partsHTML(v, withAdjust) {
   }).join('');
 }
 
+
+function compactMoney(value) {
+  const n = Math.round(Number(value) || 0);
+  if (n >= 1000000) return (n / 1000000).toLocaleString('es-PY', { maximumFractionDigits: 1 }) + ' M';
+  if (n >= 1000) return (n / 1000).toLocaleString('es-PY', { maximumFractionDigits: 0 }) + ' mil';
+  return String(n);
+}
+function renderProfitAnalytics(v) {
+  const fuelRows = Array.isArray(v.fuel) ? v.fuel : [];
+  const serviceRows = Array.isArray(v.services) ? v.services : [];
+  const totalFuel = fuelRows.reduce((sum, x) => sum + fuelCost(x), 0);
+  const totalService = serviceRows.reduce((sum, x) => sum + (Number(x.cost) || 0), 0);
+  const totalCost = totalFuel + totalService;
+
+  // Only count positive odometer intervals; repeated readings do not add distance.
+  const ordered = [...fuelRows].sort((a, b) => Number(a.km) - Number(b.km) || String(a.date).localeCompare(String(b.date)));
+  let distance = 0;
+  for (let i = 1; i < ordered.length; i++) {
+    const delta = Number(ordered[i].km) - Number(ordered[i - 1].km);
+    if (Number.isFinite(delta) && delta > 0) distance += delta;
+  }
+
+  $('costPerKm').textContent = distance > 0 ? money(totalFuel / distance) + '/km' : '—';
+  $('avgFuelLoad').textContent = fuelRows.length ? money(totalFuel / fuelRows.length) : '—';
+  $('avgFuelLoadSub').textContent = fuelRows.length + ' carga(s) registradas';
+  $('trackedKm').textContent = distance > 0 ? num(distance) + ' km' : '—';
+  $('totalOperatingCost').textContent = money(totalCost);
+
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const fuel = fuelRows.filter(x => String(x.date || '').slice(0, 7) === key)
+      .reduce((sum, x) => sum + fuelCost(x), 0);
+    const service = serviceRows.filter(x => String(x.date || '').slice(0, 7) === key)
+      .reduce((sum, x) => sum + (Number(x.cost) || 0), 0);
+    months.push({
+      label: d.toLocaleDateString('es-PY', { month: 'short' }).replace('.', ''),
+      value: fuel + service
+    });
+  }
+  const max = Math.max(1, ...months.map(m => m.value));
+  $('expenseChart').innerHTML = months.map(m => {
+    const pct = m.value > 0 ? Math.max(3, m.value / max * 100) : 0;
+    return '<div class="bar-month" title="' + esc(m.label) + ': ' + esc(money(m.value)) + '">' +
+      '<div class="bar-value">' + (m.value > 0 ? esc(compactMoney(m.value)) : '—') + '</div>' +
+      '<div class="bar-track"><div class="bar-column" style="height:' + pct + '%"></div></div>' +
+      '<div class="bar-label">' + esc(m.label) + '</div></div>';
+  }).join('');
+
+  const splitMax = Math.max(1, totalFuel, totalService);
+  $('expenseSplit').innerHTML =
+    '<div class="split-row"><div class="split-name">⛽ Combustible</div><div class="split-amount">' + esc(money(totalFuel)) + '</div><div class="split-track"><div class="split-fill" style="width:' + (totalFuel / splitMax * 100) + '%"></div></div></div>' +
+    '<div class="split-row service"><div class="split-name">🛠️ Servicios y otros</div><div class="split-amount">' + esc(money(totalService)) + '</div><div class="split-track"><div class="split-fill" style="width:' + (totalService / splitMax * 100) + '%"></div></div></div>';
+}
+
 function renderDashboard(v) {
   if (!v) {
-    ['m1', 'm2', 'm3', 'm4', 'monthFuel', 'monthService', 'monthTotal'].forEach(id => { $(id).textContent = '—'; });
+    ['m1', 'm2', 'm3', 'm4', 'monthFuel', 'monthService', 'monthTotal', 'costPerKm', 'avgFuelLoad', 'trackedKm', 'totalOperatingCost'].forEach(id => { $(id).textContent = '—'; });
     ['m1s', 'm2s', 'm3s', 'm4s', 'monthFuelSub', 'monthTotalSub'].forEach(id => { $(id).textContent = ''; });
     $('partsA').innerHTML = $('alerts').innerHTML = '<div class="empty">Agregá un vehículo para comenzar.</div>';
     return;
   }
   const s = stats(v);
+  renderProfitAnalytics(v);
   const monthKey = today().slice(0, 7);
   const monthFuelRows = v.fuel.filter(x => x.date.slice(0, 7) === monthKey);
   const monthServiceRows = v.services.filter(x => x.date.slice(0, 7) === monthKey);
@@ -1085,314 +1251,6 @@ $('fDate').value = today();
 $('sDate').value = today();
 switchView('dashboard');
 render();
-
-// Navegación mejorada + títulos
-const titles = {
-  dashboard: ['Dashboard','Resumen operativo de tu flota'],
-  vehicles: ['Vehículos','Gestioná tu flota y respaldos'],
-  fuel: ['Combustible','Registrá cargas y controlá consumo'],
-  maintenance: ['Mantenimiento','Desgaste y servicios'],
-  reports: ['Reportes','Análisis y exportación']
-};
-const originalSwitch = window.switchView || null;
-function switchView(v) {
-  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
-  const el = document.getElementById('view-'+v);
-  if(el) el.classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(x=>x.classList.toggle('active', x.dataset.view===v));
-  const t = titles[v];
-  if(t){ document.getElementById('topTitle').textContent = t[0]; document.getElementById('topSub').textContent = t[1]; }
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-document.querySelectorAll('.nav-item').forEach(n=>{ n.addEventListener('click', ()=>switchView(n.dataset.view)); });
-// Reemplazar switchView global si existe
-window.switchView = switchView;
-try{ switchView('dashboard'); }catch(e){}
-
-// === MEJORAS V2: TEMA CLARO/OSCURO ===
-const THEME_KEY='fleetcontrol_theme';
-function applyTheme(t){
-  document.documentElement.setAttribute('data-theme', t);
-  localStorage.setItem(THEME_KEY, t);
-  const btn=document.getElementById('themeToggle');
-  if(btn) btn.textContent = t==='light' ? '🌙' : '☀️';
-}
-(function initTheme(){
-  const saved=localStorage.getItem(THEME_KEY) || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-  applyTheme(saved);
-})();
-document.getElementById('themeToggle')?.addEventListener('click', ()=>{
-  const cur=document.documentElement.getAttribute('data-theme')||'dark';
-  applyTheme(cur==='dark' ? 'light' : 'dark');
-});
-
-// === GRÁFICOS SIN LIBRERÍAS ===
-function drawLineChart(canvas, datasets, labels){
-  if(!canvas) return;
-  const dpr=window.devicePixelRatio||1;
-  const rect=canvas.getBoundingClientRect();
-  canvas.width=rect.width*dpr; canvas.height=rect.height*dpr;
-  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
-  const W=rect.width, H=rect.height, pad={top:20,right:16,bottom:28,left:40};
-  ctx.clearRect(0,0,W,H);
-  const isLight=document.documentElement.getAttribute('data-theme')==='light';
-  const gridColor=isLight?'rgba(15,23,42,.08)':'rgba(148,163,184,.1)';
-  const textColor=isLight?'#64748b':'#7d90b1';
-  // grid
-  ctx.strokeStyle=gridColor; ctx.lineWidth=1;
-  for(let i=0;i<=4;i++){ const y=pad.top + (H-pad.top-pad.bottom)*i/4; ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke(); }
-  // find max
-  let max=0; datasets.forEach(ds=>{ ds.data.forEach(v=>{ if(v>max) max=v; }); });
-  if(max===0) max=1;
-  const colors=['#3b82f6','#34d399','#fbbf24','#a78bfa'];
-  datasets.forEach((ds, idx)=>{
-    const col=ds.color||colors[idx%colors.length];
-    ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.lineCap='round';
-    ctx.beginPath();
-    ds.data.forEach((v,i)=>{
-      const x=pad.left + (W-pad.left-pad.right)*(labels.length<=1?0.5:i/(labels.length-1));
-      const y=pad.top + (H-pad.top-pad.bottom)*(1 - v/max);
-      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-    });
-    ctx.stroke();
-    // dots
-    ctx.fillStyle=col;
-    ds.data.forEach((v,i)=>{
-      const x=pad.left + (W-pad.left-pad.right)*(labels.length<=1?0.5:i/(labels.length-1));
-      const y=pad.top + (H-pad.top-pad.bottom)*(1 - v/max);
-      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(x,y,1.2,0,Math.PI*2); ctx.fill(); ctx.fillStyle=col;
-    });
-  });
-  // labels
-  ctx.fillStyle=textColor; ctx.font='10px Inter'; ctx.textAlign='center';
-  labels.forEach((lb,i)=>{
-    const x=pad.left + (W-pad.left-pad.right)*(labels.length<=1?0.5:i/(labels.length-1));
-    ctx.fillText(lb.slice(5), x, H-6);
-  });
-}
-
-let chartRange='all';
-function renderCharts(){
-  const v=cur(); const c=document.getElementById('chartConsumption'); if(!c) return;
-  if(!v || !v.fuel.length){ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); return; }
-  let fuel=[...v.fuel].sort((a,b)=>a.date.localeCompare(b.date));
-  if(chartRange!=='all'){ const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-parseInt(chartRange)); const iso=cutoff.toISOString().slice(0,10); fuel=fuel.filter(x=>x.date>=iso); }
-  if(fuel.length<2){ drawLineChart(c, [{data:fuel.map(f=>f.liters), color:'#3b82f6'}], fuel.map(f=>f.date)); return; }
-  // calcular L/100km por intervalos simples entre cargas
-  const dists=[]; const consumos=[]; const costos=[];
-  for(let i=1;i<fuel.length;i++){ const d=fuel[i].km - fuel[i-1].km; if(d<=0) continue; const l100=fuel[i].liters*100/d; dists.push(d); consumos.push(Math.min(l100,30)); costos.push(Math.min(fuelCost(fuel[i])/1000, 500)); }
-  const labels=fuel.slice(1).map(f=>f.date);
-  drawLineChart(c, [{data:consumos, color:'#5ea2ff'}, {data:costos, color:'#34d399'}], labels);
-}
-
-document.querySelectorAll('#chartFilters .chip').forEach(ch=>{ ch.addEventListener('click', ()=>{ document.querySelectorAll('#chartFilters .chip').forEach(x=>x.classList.remove('active')); ch.classList.add('active'); chartRange=ch.dataset.range; renderCharts(); }); });
-
-// === BÚSQUEDA Y FILTROS ===
-let fuelFilter='all';
-function setupFilters(){
-  const sV=document.getElementById('searchVehicles');
-  const sF=document.getElementById('searchFuel');
-  const sS=document.getElementById('searchSvc');
-  if(sV) sV.addEventListener('input', render);
-  if(sF) sF.addEventListener('input', render);
-  if(sS) sS.addEventListener('input', render);
-  document.querySelectorAll('[data-f]').forEach(ch=>{
-    ch.addEventListener('click', ()=>{
-      document.querySelectorAll('[data-f]').forEach(x=>x.classList.remove('active'));
-      ch.classList.add('active'); fuelFilter=ch.dataset.f; render();
-    });
-  });
-}
-setupFilters();
-
-// Hook into render original para aplicar filtros y gráficos
-const origRender = window.render || render;
-const origRenderReport = window.renderReport;
-window._origRender = origRender;
-window.render = function(){
-  _origRender();
-  renderCharts();
-  // apply vehicle gallery filter
-  const qV=(document.getElementById('searchVehicles')?.value||'').toLowerCase().trim();
-  if(qV){ document.querySelectorAll('#gallery .vc').forEach(card=>{ const txt=card.textContent.toLowerCase(); card.style.display = txt.includes(qV) ? '' : 'none'; }); }
-  const qF=(document.getElementById('searchFuel')?.value||'').toLowerCase().trim();
-  const fuelRows=document.querySelectorAll('#fuelTable table tbody tr');
-  fuelRows.forEach(tr=>{
-    let show=true;
-    if(qF && !tr.textContent.toLowerCase().includes(qF)) show=false;
-    if(fuelFilter!=='all'){
-      const txt=tr.textContent;
-      const isFull=txt.includes('lleno')||txt.includes('Tanque lleno');
-      if(fuelFilter==='full' && !isFull) show=false;
-      if(fuelFilter==='partial' && isFull) show=false;
-    }
-    tr.style.display=show?'':'none';
-  });
-  const qS=(document.getElementById('searchSvc')?.value||'').toLowerCase().trim();
-  if(qS){ document.querySelectorAll('#svcTable table tbody tr').forEach(tr=>{ tr.style.display = tr.textContent.toLowerCase().includes(qS) ? '' : 'none'; }); }
-};
-
-window.addEventListener('resize', ()=>{ clearTimeout(window._chartR); window._chartR=setTimeout(renderCharts,200); });
-
-
-// === REPORTES: GRAFICOS MENSUALES + DONUT + PDF CON GRAFICOS ===
-let reportMonths = 6;
-
-function getMonthlyData(scope='one', periodMonths=6){
-  const now=new Date();
-  const months=[];
-  for(let i=periodMonths-1;i>=0;i--){ const d=new Date(now.getFullYear(), now.getMonth()-i, 1); months.push({key:d.toISOString().slice(0,7), label:d.toLocaleDateString('es-PY',{month:'short', year:'2-digit'})}); }
-  const data=months.map(m=>({label:m.label, key:m.key, fuel:0, service:0}));
-  const vehicles = scope==='all' ? state.vehicles : (cur()? [cur()] : []);
-  vehicles.forEach(v=>{
-    v.fuel.forEach(f=>{
-      const k=f.date.slice(0,7);
-      const idx=data.findIndex(d=>d.key===k);
-      if(idx>=0) data[idx].fuel+=fuelCost(f);
-    });
-    v.services.forEach(s=>{
-      const k=s.date.slice(0,7);
-      const idx=data.findIndex(d=>d.key===k);
-      if(idx>=0) data[idx].service+=s.cost;
-    });
-  });
-  return data;
-}
-
-function drawBarChart(canvas, data){
-  if(!canvas) return;
-  const dpr=window.devicePixelRatio||1;
-  const rect=canvas.getBoundingClientRect();
-  canvas.width=rect.width*dpr; canvas.height=rect.height*dpr;
-  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
-  const W=rect.width, H=rect.height, pad={top:20,right:12,bottom:36,left:48};
-  ctx.clearRect(0,0,W,H);
-  const isLight=document.documentElement.getAttribute('data-theme')==='light';
-  const gridColor=isLight?'rgba(15,23,42,.07)':'rgba(148,163,184,.1)';
-  const textColor=isLight?'#64748b':'#7d90b1';
-  let max=0; data.forEach(d=>{ const t=d.fuel+d.service; if(t>max) max=t; }); if(max===0) max=1;
-  // grid
-  ctx.strokeStyle=gridColor; ctx.lineWidth=1;
-  for(let i=0;i<=4;i++){ const y=pad.top + (H-pad.top-pad.bottom)*i/4; ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke(); }
-  const barW=(W-pad.left-pad.right)/data.length*0.6;
-  const gap=(W-pad.left-pad.right)/data.length*0.4;
-  data.forEach((d,i)=>{
-    const x0=pad.left + (W-pad.left-pad.right)*i/data.length + gap/2;
-    const totalH=(H-pad.top-pad.bottom)*(d.fuel+d.service)/max;
-    const fuelH=(H-pad.top-pad.bottom)*d.fuel/max;
-    const serviceH=totalH-fuelH;
-    const yBase=H-pad.bottom;
-    // service bottom? actually fuel bottom
-    // fuel
-    ctx.fillStyle='#3b82f6';
-    ctx.beginPath(); ctx.roundRect(x0, yBase-fuelH, barW, fuelH, [4,4,0,0]); ctx.fill();
-    // service on top
-    if(serviceH>1){
-      ctx.fillStyle='#fbbf24';
-      ctx.beginPath(); ctx.roundRect(x0, yBase-totalH, barW, serviceH, [4,4,0,0]); ctx.fill();
-    }
-  });
-  ctx.fillStyle=textColor; ctx.font='10px Inter'; ctx.textAlign='center';
-  data.forEach((d,i)=>{
-    const x=pad.left + (W-pad.left-pad.right)*i/data.length + (W-pad.left-pad.right)/data.length/2;
-    ctx.fillText(d.label, x, H-8);
-  });
-  // y labels
-  ctx.textAlign='right';
-  for(let i=0;i<=4;i++){
-    const v=max*(1-i/4);
-    const y=pad.top + (H-pad.top-pad.bottom)*i/4 +3;
-    ctx.fillText(v>=1000? (Math.round(v/1000)+'k') : Math.round(v).toString(), pad.left-8, y);
-  }
-}
-
-function drawDonutChart(canvas, fuelTotal, serviceTotal){
-  if(!canvas) return;
-  const dpr=window.devicePixelRatio||1;
-  const rect=canvas.getBoundingClientRect();
-  canvas.width=rect.width*dpr; canvas.height=rect.height*dpr;
-  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
-  const W=rect.width, H=rect.height; ctx.clearRect(0,0,W,H);
-  const total=fuelTotal+serviceTotal; if(total===0){ ctx.fillStyle='#64748b'; ctx.font='13px Inter'; ctx.textAlign='center'; ctx.fillText('Sin datos en el período', W/2, H/2); return; }
-  const cx=W/2, cy=H/2, r=Math.min(W,H)/2-20, inner=r*0.62;
-  let start=-Math.PI/2;
-  const segments=[{val:fuelTotal, color:'#3b82f6', label:'Combustible'}, {val:serviceTotal, color:'#fbbf24', label:'Servicios'}];
-  segments.forEach(seg=>{
-    const angle=(seg.val/total)*Math.PI*2;
-    ctx.fillStyle=seg.color;
-    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,start+angle); ctx.closePath(); ctx.fill();
-    start+=angle;
-  });
-  // hole
-  ctx.globalCompositeOperation='destination-out';
-  ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2); ctx.fill();
-  ctx.globalCompositeOperation='source-over';
-  const isLight=document.documentElement.getAttribute('data-theme')==='light';
-  ctx.fillStyle=isLight?'white':'#111e38';
-  ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2); ctx.fill();
-  // center text
-  ctx.fillStyle=isLight?'#0f172a':'#f1f6ff'; ctx.font='800 16px Inter'; ctx.textAlign='center'; ctx.fillText(money(total), cx, cy-2);
-  ctx.fillStyle='#64748b'; ctx.font='11px Inter'; ctx.fillText('Total', cx, cy+14);
-  // legend
-  const legend=document.getElementById('donutLegend');
-  if(legend){
-    const fuelPct=Math.round(fuelTotal/total*100);
-    legend.innerHTML=`<div style="display:flex; gap:12px; flex-wrap:wrap;"><span style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background:#3b82f6; border-radius:3px; display:inline-block;"></span> Combustible ${fuelPct}% - ${money(fuelTotal)}</span><span style="display:flex; align-items:center; gap:6px;"><span style="width:10px; height:10px; background:#fbbf24; border-radius:3px; display:inline-block;"></span> Servicios ${100-fuelPct}% - ${money(serviceTotal)}</span></div>`;
-  }
-}
-
-function renderReportCharts(){
-  const scope=document.getElementById('rScope')?.value||'one';
-  const data=getMonthlyData(scope, reportMonths);
-  drawBarChart(document.getElementById('chartMonthly'), data);
-  const fuelT=data.reduce((s,d)=>s+d.fuel,0);
-  const svcT=data.reduce((s,d)=>s+d.service,0);
-  drawDonutChart(document.getElementById('chartDonut'), fuelT, svcT);
-}
-
-// Hook into original renderReport
-const _origRenderReport = window.renderReport || function(){};
-window.renderReport = function(){
-  _origRenderReport();
-  setTimeout(renderReportCharts, 80);
-};
-
-// chips for report months
-document.querySelectorAll('[data-rc]').forEach(ch=>{
-  ch.addEventListener('click', ()=>{
-    document.querySelectorAll('[data-rc]').forEach(x=>x.classList.remove('active'));
-    ch.classList.add('active');
-    reportMonths=parseInt(ch.dataset.rc,10);
-    renderReportCharts();
-  });
-});
-
-// PDF con graficos - mejorar btnPrint para incluir graficos
-const origBtnPrint = document.getElementById('btnPrint');
-if(origBtnPrint){
-  const newBtn=document.createElement('button');
-  newBtn.className='btn primary';
-  newBtn.id='btnPdfCharts';
-  newBtn.type='button';
-  newBtn.innerHTML='📊 PDF con gráficos';
-  newBtn.style.marginLeft='8px';
-  origBtnPrint.parentNode.appendChild(newBtn);
-  newBtn.addEventListener('click', ()=>{
-    // asegurar graficos renderizados
-    renderReportCharts();
-    renderCharts();
-    setTimeout(()=>{
-      toast('Generando PDF... elegí Guardar como PDF');
-      setTimeout(()=>window.print(), 600);
-    }, 300);
-  });
-}
-
-// Redibujar al cambiar tema o scope
-window.addEventListener('resize', ()=>{ clearTimeout(window._rptR); window._rptR=setTimeout(()=>{ renderReportCharts(); renderCharts(); },250); });
-document.getElementById('rScope')?.addEventListener('change', ()=> setTimeout(renderReportCharts,100));
-
 </script>
-<script>(function(){var loc=location.href.replace(/#.*$/,"");var ATTR_NAMES=["data-product-id","data-productid","data-product_id","product-id","productid","product_id","data-source-entity-id","source-entity-id","source_entity_id","data-product","data-metadata","data-meta"];var DATASET_KEYS=["productId","productid","product_id","sourceEntityId","sourceentityid","source_entity_id","product","metadata","meta"];function readProductId(value){if(typeof value!=="string"||value.length===0)return null;if(/^[0-9]{6,}$/.test(value))return value;var match=value.match(/(?:product(?:_|-)?id|source(?:_|-)?entity(?:_|-)?id)["'=:\s]+([0-9]{6,})/i);return match?match[1]:null}function extractProductId(start){for(var node=start;node&&node!==document.body;node=node.parentElement){for(var i=0;i<ATTR_NAMES.length;i++){var attrValue=node.getAttribute&&node.getAttribute(ATTR_NAMES[i]);var attrProductId=readProductId(attrValue);if(attrProductId)return attrProductId}var dataset=node.dataset||null;if(dataset){for(var j=0;j<DATASET_KEYS.length;j++){var dataValue=dataset[DATASET_KEYS[j]];var dataProductId=readProductId(dataValue);if(dataProductId)return dataProductId}}}return null}function isInlineMediaSlotElement(node){return !!(node&&node.getAttribute&&node.getAttribute("data-clippy-inline-media-slot")!==null)}function findInlineMediaSlot(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(isInlineMediaSlotElement(node))return node}return null}function readInlineMediaUrl(node){if(!node)return null;return node.getAttribute&&((node.getAttribute("data-clippy-inline-media-url")||node.getAttribute("data-url")||node.getAttribute("data_url")))||node.href||null}function stripHash(url){return String(url).replace(/#.*$/,"")}function urlsMatch(a,b){if(!a||!b)return false;try{return stripHash(new URL(a,loc).href)===stripHash(new URL(b,loc).href)}catch(_){return stripHash(a)===stripHash(b)}}function isFirstPartyReelUrl(value){try{var url=new URL(value,loc);if(url.protocol!=="https:")return false;var host=url.hostname.toLowerCase();var supported=host==="instagram.com"||host.endsWith(".instagram.com")||host==="facebook.com"||host.endsWith(".facebook.com");return supported&&/\/reels?\//i.test(url.pathname)}catch(_){return false}}function isInlineMediaUrlClick(node,href){var slot=findInlineMediaSlot(node);if(!slot)return false;var slotUrl=readInlineMediaUrl(slot);if(slotUrl)return urlsMatch(href,slotUrl);return isFirstPartyReelUrl(href)}function findDataHref(start){for(var node=start;node&&node!==document.body;node=node.parentElement){if(node.getAttribute){var href=node.getAttribute("data-href")||node.getAttribute("data-url");if(href)return{href:href,node:node}}}return null}var nativeOpen=window.open;window.open=function(url){if(parent!==window&&typeof url==="string"&&/^https?:\/\//.test(url)){parent.postMessage({type:"ecto:usercontent-link-click",href:url},"*");return null}return nativeOpen?nativeOpen.apply(window,arguments):null};document.addEventListener("click",function(e){var target=e.target instanceof Element?e.target:null;if(!target)return;if(parent===window)return;var a=target.closest?target.closest("a[href]"):null;if(a&&a.href&&/^https?:\/\//.test(a.href)&&a.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(a,a.href))return;var productId=extractProductId(target)||extractProductId(a);if(productId){e.preventDefault();parent.postMessage({type:"ecto-artifact-link-click",productId:productId},"*");return}e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:a.href},"*");return}var dataHref=findDataHref(target);if(dataHref&&/^https?:\/\//.test(dataHref.href)&&dataHref.href.replace(/#.*$/,"")!==loc){if(isInlineMediaUrlClick(dataHref.node,dataHref.href))return;e.preventDefault();parent.postMessage({type:"ecto:usercontent-link-click",href:dataHref.href},"*")}},true)})();</script><script>(function(){var FOCUS_TYPE="ecto:artifact-focus-request";var CLOSE_TYPE="ecto:artifact-close-request";function focusArtifactDocument(){var body=document.body;if(!body)return;try{window.focus();}catch(e){}if(!body.hasAttribute("tabindex"))body.setAttribute("tabindex","-1");try{body.focus({preventScroll:true});}catch(e){try{body.focus();}catch(e2){}}}window.addEventListener("message",function(event){if(event.source!==window.parent)return;var data=event.data;if(!data||typeof data!=="object"||data.type!==FOCUS_TYPE)return;if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",focusArtifactDocument,{once:true});return;}focusArtifactDocument();});window.addEventListener("keydown",function(event){if(event.key!=="Escape")return;window.setTimeout(function(){if(event.defaultPrevented)return;window.parent.postMessage({type:CLOSE_TYPE},"*");},0);});})();</script></body>
+</body>
 </html>
