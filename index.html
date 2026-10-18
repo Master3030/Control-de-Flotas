@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FleetControl Pro v6.0</title>
+<title>FleetControl Pro v7.0</title>
 <style>
 :root{--bg:#0a0f1e;--side:#111827;--card:#1a2236;--input:#0f172a;--bd:rgba(148,163,184,.15);--tx:#f1f5f9;--mut:#64748b;--dim:#94a3b8;--blue:#3b82f6;--green:#10b981;--orange:#f59e0b;--red:#ef4444}
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
@@ -304,11 +304,24 @@ button:focus-visible,.nav-item:focus-visible,.vc:focus-visible{outline:2px solid
  .bar-value{font-size:8px}
 }
 
+
+/* FleetControl Pro v7.0: budgets, fleet comparison and smart warnings */
+.v7-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.budget-line{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 8px;font-size:12px;color:var(--dim)}
+.budget-track{height:9px;background:#26344b;border-radius:99px;overflow:hidden}
+.budget-fill{height:100%;width:0;background:linear-gradient(90deg,#34d399,#10b981);border-radius:99px;transition:width .25s}
+.budget-fill.warn{background:linear-gradient(90deg,#fbbf24,#f59e0b)}.budget-fill.over{background:linear-gradient(90deg,#fb7185,#ef4444)}
+.smart-alert{border:1px solid rgba(245,158,11,.25);background:rgba(245,158,11,.07);padding:11px 12px;border-radius:10px;margin:8px 0;color:#fbbf24;font-size:12px;line-height:1.5}
+.compare-table{width:100%;border-collapse:collapse;font-size:12px}.compare-table th,.compare-table td{padding:10px 8px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}.compare-table th{color:var(--dim);font-weight:600}.compare-table td{color:var(--tx)}.compare-table tr:last-child td{border-bottom:0}
+.budget-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:12px}.budget-form label{display:block;color:var(--dim);font-size:12px;margin-bottom:6px}.budget-form input{width:100%;min-width:0;background:var(--input);border:1px solid var(--bd);border-radius:9px;color:var(--tx);padding:11px}
+.forecast-note{font-size:12px;color:var(--dim);margin-top:9px;line-height:1.5}
+@media(max-width:700px){.v7-grid{grid-template-columns:minmax(0,1fr)}.compare-table{font-size:11px}.compare-table th,.compare-table td{padding:8px 5px}.budget-form{grid-template-columns:minmax(0,1fr)}}
+
 </style>
 </head>
 <body>
 <div class="sidebar">
-  <div class="logo">🚀 FleetControl<small>Pro v6.0 · Rentabilidad</small></div>
+  <div class="logo">🚀 FleetControl<small>Pro v7.0 · Gestión inteligente</small></div>
   <nav class="nav">
     <div class="nav-item active" data-view="dashboard">📊 Panel</div>
     <div class="nav-item" data-view="vehicles">🚙 Vehículos</div>
@@ -362,6 +375,27 @@ button:focus-visible,.nav-item:focus-visible,.vc:focus-visible{outline:2px solid
         </div>
       </div>
       <p class="analytics-note">Los importes se calculan con los registros guardados para el vehículo seleccionado. El costo por km es orientativo y no equivale a una medición exacta del combustible consumido.</p>
+    </div>
+    <div class="v7-grid">
+      <div class="card" id="budgetCard">
+        <div class="ct">🎯 Presupuesto mensual</div>
+        <div class="metrics" style="margin-bottom:0">
+          <div class="metric"><h3>Gasto este mes</h3><div class="mv" id="budgetSpent">—</div><div class="ms" id="budgetSpentSub">Combustible + servicios</div></div>
+          <div class="metric"><h3>Presupuesto disponible</h3><div class="mv" id="budgetRemaining">—</div><div class="ms" id="budgetRemainingSub">Definí un límite mensual</div></div>
+        </div>
+        <div class="budget-line"><span id="budgetProgressText">Sin presupuesto configurado</span><strong id="budgetPercent">—</strong></div>
+        <div class="budget-track"><div class="budget-fill" id="budgetFill"></div></div>
+        <form id="budgetForm" class="budget-form">
+          <div><label for="monthlyBudgetInput">Límite mensual (Gs.)</label><input type="text" inputmode="numeric" id="monthlyBudgetInput" placeholder="Ej: 1.500.000"></div>
+          <button class="btn" type="submit">Guardar límite</button>
+        </form>
+        <p class="forecast-note" id="budgetForecast">El pronóstico aparecerá cuando configures un presupuesto.</p>
+      </div>
+      <div class="card" id="fleetCompareCard">
+        <div class="ct">🚘 Comparador de flota</div>
+        <div id="fleetCompare"><div class="empty">Agregá vehículos para compararlos.</div></div>
+        <p class="forecast-note">El costo/km usa el historial disponible; si faltan datos de kilometraje, la comparación puede ser incompleta.</p>
+      </div>
     </div>
     <div class="card">
       <div class="ct">Actualizar odómetro</div>
@@ -546,7 +580,8 @@ function clean(s) {
     out.push({
       id, name, plate, kind: v.kind === 'Moto' || v.kind === 'Auto' ? v.kind : undefined,
       type: ['Nafta', 'Diésel', 'GNC'].includes(v.type) ? v.type : 'Nafta',
-      perf: +v.perf, price: fuel.length ? [...fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km || b.id - a.id)[0].price : 0, km, parts, fuel, services
+      perf: +v.perf, price: fuel.length ? [...fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km || b.id - a.id)[0].price : 0, km, parts, fuel, services,
+      budgetMonthly: nn(v.budgetMonthly, 1e12) ? +v.budgetMonthly : 0
     });
   });
   s.vehicles = out;
@@ -757,9 +792,59 @@ function renderProfitAnalytics(v) {
     '<div class="split-row service"><div class="split-name">🛠️ Servicios y otros</div><div class="split-amount">' + esc(money(totalService)) + '</div><div class="split-track"><div class="split-fill" style="width:' + (totalService / splitMax * 100) + '%"></div></div></div>';
 }
 
+function renderBudget(v) {
+  const month = today().slice(0, 7);
+  const spent = v.fuel.filter(x => x.date.slice(0, 7) === month).reduce((s, x) => s + fuelCost(x), 0) +
+    v.services.filter(x => x.date.slice(0, 7) === month).reduce((s, x) => s + x.cost, 0);
+  const budget = Number(v.budgetMonthly) || 0;
+  const pct = budget > 0 ? spent / budget * 100 : 0;
+  $('budgetSpent').textContent = money(spent);
+  $('budgetRemaining').textContent = budget > 0 ? money(budget - spent) : '—';
+  $('budgetRemainingSub').textContent = budget > 0 ? (spent > budget ? 'Presupuesto superado' : 'Disponible este mes') : 'Definí un límite mensual';
+  $('budgetProgressText').textContent = budget > 0 ? (pct >= 100 ? 'Límite superado' : 'Uso del presupuesto') : 'Sin presupuesto configurado';
+  $('budgetPercent').textContent = budget > 0 ? num(pct, 1) + '%' : '—';
+  $('budgetFill').style.width = Math.min(100, pct) + '%';
+  $('budgetFill').className = 'budget-fill' + (pct >= 100 ? ' over' : pct >= 80 ? ' warn' : '');
+  if (document.activeElement !== $('monthlyBudgetInput')) $('monthlyBudgetInput').value = budget ? String(Math.round(budget)) : '';
+  if (budget > 0) {
+    const day = new Date().getDate(), days = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+    const forecast = day > 0 ? spent / day * days : spent;
+    $('budgetForecast').textContent = 'Proyección al cierre: ' + money(forecast) + (forecast > budget ? ' · Podrías superar el límite.' : ' · Según el ritmo de gasto actual.');
+  } else $('budgetForecast').textContent = 'Configurá un límite para comparar el gasto y estimar el cierre del mes.';
+}
+function renderFleetCompare() {
+  const box = $('fleetCompare');
+  if (!state.vehicles.length) { box.innerHTML = '<div class="empty">Agregá vehículos para compararlos.</div>'; return; }
+  const rows = state.vehicles.map(v => {
+    const s = stats(v);
+    const service = v.services.reduce((sum, x) => sum + x.cost, 0);
+    const fuel = v.fuel.reduce((sum, x) => sum + fuelCost(x), 0);
+    return {v, s, total: fuel + service};
+  }).sort((a,b) => (a.s.cpk || Infinity) - (b.s.cpk || Infinity));
+  box.innerHTML = '<div class="tw"><table class="compare-table"><thead><tr><th>Vehículo</th><th>Gasto acum.</th><th>Costo/km</th></tr></thead><tbody>' + rows.map(r =>
+    '<tr><td><strong>' + esc(r.v.name) + '</strong><br><span style="color:var(--dim)">' + esc(r.v.plate) + '</span></td><td>' + esc(money(r.total)) + '</td><td>' + (r.s.cpk > 0 ? esc(money(r.s.cpk)) : '—') + '</td></tr>'
+  ).join('') + '</tbody></table></div>';
+}
+function appendSmartAlerts(v) {
+  const notes = [];
+  const f = [...v.fuel].sort((a,b) => a.date.localeCompare(b.date) || a.km-b.km);
+  for (let i=1;i<f.length;i++) {
+    const prev=f[i-1], x=f[i];
+    if (x.km < prev.km) notes.push('Hay una carga con kilometraje inferior al registro anterior. Revisá el historial.');
+    if (x.date===prev.date && x.km===prev.km && Math.abs(x.liters-prev.liters)<0.000001) notes.push('Posible carga duplicada: misma fecha, kilometraje y litros.');
+    if (x.price > 0 && prev.price > 0 && Math.abs(x.price-prev.price)/prev.price >= .25) notes.push('El precio por litro cambió más del 25% respecto de la carga anterior; verificá que sea correcto.');
+  }
+  const budget=Number(v.budgetMonthly)||0, month=today().slice(0,7);
+  const spent=v.fuel.filter(x=>x.date.slice(0,7)===month).reduce((s,x)=>s+fuelCost(x),0)+v.services.filter(x=>x.date.slice(0,7)===month).reduce((s,x)=>s+x.cost,0);
+  if (budget>0 && spent>budget) notes.push('Superaste el presupuesto mensual por ' + money(spent-budget) + '.');
+  else if (budget>0 && spent>=budget*.8) notes.push('Ya utilizaste al menos el 80% del presupuesto mensual.');
+  if (notes.length) $('alerts').innerHTML += notes.slice(0,5).map(n=>'<div class="smart-alert">⚠️ '+esc(n)+'</div>').join('');
+}
+
 function renderDashboard(v) {
   if (!v) {
-    ['m1', 'm2', 'm3', 'm4', 'monthFuel', 'monthService', 'monthTotal', 'costPerKm', 'avgFuelLoad', 'trackedKm', 'totalOperatingCost'].forEach(id => { $(id).textContent = '—'; });
+    ['m1', 'm2', 'm3', 'm4', 'monthFuel', 'monthService', 'monthTotal', 'costPerKm', 'avgFuelLoad', 'trackedKm', 'totalOperatingCost', 'budgetSpent', 'budgetRemaining', 'budgetPercent'].forEach(id => { $(id).textContent = '—'; });
+    $('budgetProgressText').textContent = 'Sin vehículo seleccionado'; $('budgetRemainingSub').textContent = ''; $('budgetForecast').textContent = ''; $('budgetFill').style.width = '0%'; $('fleetCompare').innerHTML = '<div class="empty">Agregá vehículos para compararlos.</div>';
     ['m1s', 'm2s', 'm3s', 'm4s', 'monthFuelSub', 'monthTotalSub'].forEach(id => { $(id).textContent = ''; });
     $('partsA').innerHTML = $('alerts').innerHTML = '<div class="empty">Agregá un vehículo para comenzar.</div>';
     return;
@@ -796,6 +881,9 @@ function renderDashboard(v) {
     ? al.map(x => `<div class="alert">${x.st.lvl === 2 ? '🔴' : '🟠'} ${esc(x.p.name)}<span>${x.st.txt}</span></div>`).join('')
     : (unc ? '' : '<div class="empty">✅ Todo en orden</div>');
   if (unc) $('alerts').innerHTML += '<div class="alert">⚠️ ' + unc + ' componente(s) con desgaste sin confirmar<span>Ajustalos en Servicio para activar sus alertas</span></div>';
+  renderBudget(v);
+  renderFleetCompare();
+  appendSmartAlerts(v);
 }
 
 function renderGallery() {
@@ -829,7 +917,7 @@ function renderFuel(v) {
     prev = i;
   });
   const rows = [...v.fuel].sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km).map(x => `<tr>
-    <td>${fdate(x.date)}</td><td>${esc(x.station || '-')}</td><td>${num(x.liters, 2)} L</td>
+    <td>${fdate(x.date)}</td><td>${esc(x.station || '-')}</td><td>${num(x.liters, 3)} L</td>
     <td>${money(x.price)}</td><td>${money(fuelCost(x))}</td><td>${num(x.km)} km</td>
     <td>${perf[x.id] ? num(100 / perf[x.id], 1) + ' L/100 km' : '-'}</td>
     <td style="white-space:nowrap"><button class="btn ghost sm" data-act="editfuel" data-id="${x.id}">Editar</button> <button class="btn ghost sm" data-act="togfull" data-id="${x.id}">Tipo</button> <button class="btn red sm" data-act="delfuel" data-id="${x.id}">✕</button></td></tr>`).join('');
@@ -1093,11 +1181,22 @@ $('fVeh').addEventListener('submit', e => {
   const v = {
     id: 'v_' + uid(), name: $('vName').value.trim(), plate, kind: $('vKind').value, type: $('vType').value,
     perf: 100 / cons, price: 0, km: parseInt($('vKm').value, 10),
-    parts: ($('vKind').value === 'Moto' ? PARTS_MOTO : PARTS).map(p => ({ ...p, current: 0, confirmed: false })), fuel: [], services: []
+    parts: ($('vKind').value === 'Moto' ? PARTS_MOTO : PARTS).map(p => ({ ...p, current: 0, confirmed: false })), fuel: [], services: [], budgetMonthly: 0
   };
   state.vehicles.push(v); state.currentId = v.id;
   save(); render(); e.target.reset(); switchView('maintenance');
   toast('Vehículo agregado. Ajustá el desgaste de cada componente.');
+});
+
+$('budgetForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const v=cur(); if(!v) return toast('Primero agregá un vehículo', true);
+  const raw=$('monthlyBudgetInput').value.trim();
+  const amount=parseGs(raw);
+  if(raw && !(Number.isFinite(amount) && amount >= 0 && amount <= 1e12)) return toast('Presupuesto inválido', true);
+  v.budgetMonthly=raw ? amount : 0;
+  if(!save()) return;
+  render(); toast(v.budgetMonthly ? 'Presupuesto mensual guardado' : 'Presupuesto eliminado');
 });
 
 $('fOdo').addEventListener('submit', e => {
@@ -1198,7 +1297,7 @@ function exportCSV() {
   toast('Archivo CSV exportado; podés abrirlo con Excel o una hoja de cálculo');
 }
 function downloadBackup(prefix) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify({ app: 'FleetControl', version: 5, ...state })], { type: 'application/json' }));
+  const url = URL.createObjectURL(new Blob([JSON.stringify({ app: 'FleetControl', version: 7, ...state })], { type: 'application/json' }));
   const a = document.createElement('a');
   a.href = url; a.download = prefix + '_' + today() + '.json';
   document.body.appendChild(a); a.click(); a.remove();
@@ -1215,7 +1314,7 @@ $('fileRestore').addEventListener('change', e => {
     try {
       const s = JSON.parse(r.result);
       if (!s || !Array.isArray(s.vehicles) || (s.app && s.app !== 'FleetControl')) throw new Error('formato');
-      if (s.version > 5) { toast('Ese respaldo es de una versión más nueva de la app', true); return; }
+      if (s.version > 7) { toast('Ese respaldo es de una versión más nueva de la app', true); return; }
       const raw = s.vehicles.length;
       const nv = clean(s);
       delete nv.app; delete nv.version;
