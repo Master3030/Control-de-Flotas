@@ -462,15 +462,12 @@ body{background:radial-gradient(ellipse at 78% -10%,rgba(59,130,246,.13),transpa
     </div>
     <div class="card no-print" id="cloudPanel">
       <div class="ct">☁️ Cuenta y sincronización opcional</div>
-      <p class="ms" style="margin-bottom:12px">Tus datos siguen guardándose en este dispositivo. Conectá Supabase para crear una cuenta y guardar una copia privada en la nube.</p>
+      <p class="ms" style="margin-bottom:12px">Creá tu cuenta para disponer de una copia privada en la nube. Tus datos de este dispositivo no se suben hasta que elijas guardar una copia.</p>
       <div class="form">
-        <div><label for="fcSupabaseUrl">Project URL</label><input id="fcSupabaseUrl" type="url" placeholder="https://tu-proyecto.supabase.co" autocomplete="url"></div>
-        <div><label for="fcSupabaseKey">Publishable key (clave pública)</label><input id="fcSupabaseKey" type="password" placeholder="sb_publishable_…" autocomplete="off"></div>
         <div><label for="fcEmail">Correo electrónico</label><input id="fcEmail" type="email" placeholder="tu@correo.com" autocomplete="email"></div>
         <div><label for="fcPassword">Contraseña</label><input id="fcPassword" type="password" minlength="8" placeholder="Mínimo 8 caracteres" autocomplete="current-password"></div>
       </div>
       <div class="actions" style="margin-top:12px;flex-wrap:wrap">
-        <button class="btn" id="fcSaveConfig" type="button">Guardar conexión</button>
         <button class="btn green" id="fcSignup" type="button">Crear cuenta</button>
         <button class="btn" id="fcLogin" type="button">Iniciar sesión</button>
         <button class="btn ghost" id="fcLogout" type="button">Cerrar sesión</button>
@@ -1416,27 +1413,24 @@ render();
 <script>
 
 // ---------- v7.3: cuenta y copia opcional en Supabase ----------
-const FC_CONFIG_KEY = 'fleetcontrol_supabase_config_v1';
+const FC_SUPABASE_URL = 'https://svjntowwelapvsqswnmi.supabase.co';
+const FC_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_yGunp1nMWb9j6dY4cDlcjg_HvZgHDOS';
 let fcClient = null;
 let fcUser = null;
 const fcStatus = (msg, error=false) => { const el=document.getElementById('fcAuthStatus'); if(el){el.textContent=msg;el.style.color=error?'var(--red)':'var(--dim)';} };
-function fcLoadConfig(){try{return JSON.parse(localStorage.getItem(FC_CONFIG_KEY)||'{}')}catch(e){return {}}}
-function fcSetConfigFields(){const c=fcLoadConfig();$('fcSupabaseUrl').value=c.url||'';$('fcSupabaseKey').value=c.key||'';}
-function fcGetConfig(){return {url:$('fcSupabaseUrl').value.trim().replace(/\/$/,''),key:$('fcSupabaseKey').value.trim()}}
-function fcValidateConfig(c){if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(c.url))throw new Error('Revisá la Project URL de Supabase.');if(!c.key||c.key.length<20)throw new Error('Pegá la Publishable key pública de Supabase.');}
-function fcInitClient(){const c=fcGetConfig();fcValidateConfig(c);if(!window.supabase||!window.supabase.createClient)throw new Error('No se pudo cargar la librería de Supabase. Revisá la conexión a Internet.');localStorage.setItem(FC_CONFIG_KEY,JSON.stringify(c));fcClient=window.supabase.createClient(c.url,c.key);return fcClient;}
+function fcGetConfig(){return {url:FC_SUPABASE_URL,key:FC_SUPABASE_PUBLISHABLE_KEY}}
+function fcValidateConfig(c){if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(c.url))throw new Error('La conexión de la aplicación no está configurada correctamente.');if(!c.key||!c.key.startsWith('sb_publishable_'))throw new Error('La clave pública de la aplicación no es válida.');}
+function fcInitClient(){const c=fcGetConfig();fcValidateConfig(c);if(!window.supabase||!window.supabase.createClient)throw new Error('No se pudo cargar la librería de Supabase. Revisá la conexión a Internet.');fcClient=window.supabase.createClient(c.url,c.key);return fcClient;}
 function fcEnsureClient(){if(fcClient)return fcClient;return fcInitClient()}
-async function fcRefreshSession(){try{if(!fcClient)return;const {data,error}=await fcClient.auth.getSession();if(error)throw error;fcUser=data.session?.user||null;fcStatus(fcUser?'Sesión iniciada: '+fcUser.email+' · Copias manuales habilitadas':'Conexión configurada. Iniciá sesión para sincronizar.');}catch(e){fcStatus(e.message||'No se pudo comprobar la sesión.',true)}}
-$('fcSaveConfig').addEventListener('click',()=>{try{fcInitClient();fcStatus('Configuración guardada en este navegador. Ahora podés crear una cuenta o iniciar sesión.');}catch(e){fcStatus(e.message,true)}});
+async function fcRefreshSession(){try{if(!fcClient)return;const {data,error}=await fcClient.auth.getSession();if(error)throw error;fcUser=data.session?.user||null;fcStatus(fcUser?'Sesión iniciada: '+fcUser.email+' · Copias manuales habilitadas':'Conexión lista. Iniciá sesión para sincronizar.');}catch(e){fcStatus(e.message||'No se pudo comprobar la sesión.',true)}}
 $('fcSignup').addEventListener('click',async()=>{try{const c=fcEnsureClient(),email=$('fcEmail').value.trim(),password=$('fcPassword').value;if(!email||password.length<8)throw new Error('Ingresá un correo válido y una contraseña de al menos 8 caracteres.');const {data,error}=await c.auth.signUp({email,password});if(error)throw error;fcUser=data.user||null;fcStatus(data.session?'Cuenta creada e iniciada. Ya podés guardar una copia en nube.':'Solicitud de registro enviada. Revisá tu correo para confirmar la cuenta antes de iniciar sesión.');}catch(e){fcStatus(e.message||'No se pudo crear la cuenta.',true)}});
 $('fcLogin').addEventListener('click',async()=>{try{const c=fcEnsureClient(),email=$('fcEmail').value.trim(),password=$('fcPassword').value;if(!email||!password)throw new Error('Ingresá tu correo y contraseña.');const {data,error}=await c.auth.signInWithPassword({email,password});if(error)throw error;fcUser=data.user;fcStatus('Sesión iniciada: '+fcUser.email+'. Tus datos siguen locales hasta que elijas subir o restaurar.');}catch(e){fcStatus(e.message||'No se pudo iniciar sesión.',true)}});
-$('fcLogout').addEventListener('click',async()=>{try{if(!fcClient)throw new Error('Primero guardá la conexión.');const {error}=await fcClient.auth.signOut();if(error)throw error;fcUser=null;fcStatus('Sesión cerrada. Los datos locales permanecen en este dispositivo.');}catch(e){fcStatus(e.message||'No se pudo cerrar sesión.',true)}});
+$('fcLogout').addEventListener('click',async()=>{try{if(!fcClient)throw new Error('No se pudo conectar con el servicio. Revisá tu conexión a Internet.');const {error}=await fcClient.auth.signOut();if(error)throw error;fcUser=null;fcStatus('Sesión cerrada. Los datos locales permanecen en este dispositivo.');}catch(e){fcStatus(e.message||'No se pudo cerrar sesión.',true)}});
 async function fcRequireUser(){const c=fcEnsureClient();const {data,error}=await c.auth.getUser();if(error)throw error;if(!data.user)throw new Error('Primero iniciá sesión.');fcUser=data.user;return {client:c,user:data.user};}
 $('fcUpload').addEventListener('click',async()=>{try{const {client,user}=await fcRequireUser();if(!confirm('Se guardará una copia de los datos de ESTE navegador en la nube para tu cuenta. Si ya existe una copia, será reemplazada. ¿Continuar?'))return;const payload=JSON.parse(JSON.stringify(state));const {error}=await client.from('user_data').upsert({owner_id:user.id,payload,updated_at:new Date().toISOString()},{onConflict:'owner_id'});if(error)throw error;fcStatus('Copia local guardada en la nube: '+new Date().toLocaleString('es-PY')+'.');}catch(e){fcStatus((e.message||'No se pudo guardar la copia.')+' Si indica que falta user_data, ejecutá el SQL incluido.',true)}});
 $('fcDownload').addEventListener('click',async()=>{try{const {client,user}=await fcRequireUser();if(!confirm('La copia de la nube REEMPLAZARÁ los datos que ves en este navegador. Antes se guardará un respaldo local descargable. ¿Continuar?'))return;const {data,error}=await client.from('user_data').select('payload,updated_at').eq('owner_id',user.id).maybeSingle();if(error)throw error;if(!data||!data.payload||!Array.isArray(data.payload.vehicles))throw new Error('No hay una copia válida en la nube para esta cuenta.');const backup=JSON.stringify({format:'FleetControl backup',version:1,createdAt:new Date().toISOString(),state},null,2);const blob=new Blob([backup],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='fleetcontrol-respaldo-antes-de-restaurar-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);const incoming=clean(data.payload);if(!Array.isArray(incoming.vehicles))throw new Error('La copia descargada no tiene el formato esperado.');state=incoming;if(!save())throw new Error('No se pudo guardar el estado restaurado localmente; revisá el espacio del navegador.');render();fcStatus('Copia restaurada desde nube (actualizada: '+new Date(data.updated_at).toLocaleString('es-PY')+'). También se descargó un respaldo previo.');}catch(e){fcStatus(e.message||'No se pudo restaurar la copia.',true)}});
-fcSetConfigFields();
-// La sesión se verifica solo si ya hay configuración guardada.
-try{const cfg=fcLoadConfig();if(cfg.url&&cfg.key){fcClient=window.supabase?.createClient(cfg.url,cfg.key)||null;if(fcClient){fcClient.auth.getSession().then(({data,error})=>{if(error)fcStatus(error.message,true);else{fcUser=data.session?.user||null;fcStatus(fcUser?'Sesión iniciada: '+fcUser.email+' · Copias manuales habilitadas':'Conexión guardada. Iniciá sesión para sincronizar.')}}).catch(()=>{});}}}catch(e){}
+// Inicializar conexión integrada sin mostrar datos técnicos al usuario.
+try{fcClient=window.supabase?.createClient(FC_SUPABASE_URL,FC_SUPABASE_PUBLISHABLE_KEY)||null;if(fcClient){fcClient.auth.getSession().then(({data,error})=>{if(error)fcStatus(error.message,true);else{fcUser=data.session?.user||null;fcStatus(fcUser?'Sesión iniciada: '+fcUser.email+' · Copias manuales habilitadas':'Creá una cuenta o iniciá sesión para sincronizar.')}}).catch(()=>{});}}catch(e){fcStatus('No se pudo iniciar la conexión con la nube.',true)}
 // Instalación PWA: el service worker solo funciona servido por HTTPS (por ejemplo GitHub Pages).
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && location.hostname!=='localhost') window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 
